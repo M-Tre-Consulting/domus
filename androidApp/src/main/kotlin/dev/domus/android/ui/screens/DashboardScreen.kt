@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
@@ -151,53 +153,62 @@ fun DashboardScreen(
             onRefresh = ::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            when {
-                errorMessage != null -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = errorMessage.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
+            val uiState = when {
+                errorMessage != null -> "error"
+                favoriteEntityIds.isEmpty() -> "empty"
+                entities.isEmpty() -> "loading"
+                else -> "content"
+            }
 
-                favoriteEntityIds.isEmpty() -> Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(text = "No entities chosen yet.")
-                    Button(
-                        onClick = onEditEntities,
-                        modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+            Crossfade(targetState = uiState, label = "dashboard-state") { state ->
+                when (state) {
+                    "error" -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text("Choose entities")
+                        Text(text = errorMessage.orEmpty(), color = MaterialTheme.colorScheme.error)
                     }
-                }
 
-                entities.isEmpty() -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
-                ) {
-                    groupedEntities.forEach { (label, entitiesInGroup) ->
-                        stickyHeader(key = "header_$label") {
-                            DomainHeader(label)
+                    "empty" -> Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(text = "No entities chosen yet.")
+                        Button(
+                            onClick = onEditEntities,
+                            modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+                        ) {
+                            Text("Choose entities")
                         }
-                        items(entitiesInGroup, key = { it.entityId }) { entity ->
-                            EntityCard(
-                                entity = entity,
-                                onCallService = ::callService,
-                                onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
-                                    { onOpenClimateDetail(entity.entityId) }
-                                } else {
-                                    null
-                                },
-                            )
+                    }
+
+                    "loading" -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
+                    ) {
+                        groupedEntities.forEach { (label, entitiesInGroup) ->
+                            stickyHeader(key = "header_$label") {
+                                DomainHeader(label)
+                            }
+                            items(entitiesInGroup, key = { it.entityId }) { entity ->
+                                EntityCard(
+                                    entity = entity,
+                                    onCallService = ::callService,
+                                    onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
+                                        { onOpenClimateDetail(entity.entityId) }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -236,7 +247,7 @@ private fun EntityCard(
     }
 
     Card(modifier = cardModifier) {
-        Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp)) {
+        Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp).animateContentSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -248,7 +259,7 @@ private fun EntityCard(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = entity.friendlyName, style = MaterialTheme.typography.titleSmall)
-                    Text(text = entity.state, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = entity.state.toDisplayLabel(), style = MaterialTheme.typography.bodyMedium)
                 }
                 if (isToggleable) {
                     Switch(
