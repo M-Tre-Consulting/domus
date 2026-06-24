@@ -17,12 +17,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dev.domus.android.data.ConnectionStore
 import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
+import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.screens.EntityPickerScreen
@@ -49,6 +52,8 @@ object Routes {
     const val CONNECT = "connect"
     const val DASHBOARD = "dashboard"
     const val PICKER = "picker"
+    const val CLIMATE_DETAIL = "climate_detail"
+    const val CLIMATE_DETAIL_ARG = "entityId"
 }
 
 @Composable
@@ -117,6 +122,29 @@ private fun DomusNavHost() {
                             popUpTo(Routes.DASHBOARD) { inclusive = true }
                         }
                     },
+                    onOpenClimateDetail = { entityId ->
+                        navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
+                    },
+                )
+            }
+        }
+        composable(
+            route = "${Routes.CLIMATE_DETAIL}/{${Routes.CLIMATE_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.CLIMATE_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.CLIMATE_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) {
+                        popUpTo(Routes.CLIMATE_DETAIL) { inclusive = true }
+                    }
+                }
+            } else {
+                ClimateDetailScreen(
+                    session = session,
+                    entityId = entityId,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

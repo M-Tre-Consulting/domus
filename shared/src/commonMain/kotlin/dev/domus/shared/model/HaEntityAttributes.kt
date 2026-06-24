@@ -58,3 +58,42 @@ val HaEntityState.options: List<String>
     get() = (attribute("options") as? JsonArray)
         ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
         ?: emptyList()
+
+private fun HaEntityState.stringList(attributeName: String): List<String> =
+    (attribute(attributeName) as? JsonArray)
+        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+        ?: emptyList()
+
+/** For `climate`/`water_heater`: the entity state itself is the current HVAC/operation mode. */
+val HaEntityState.hvacMode: String get() = state
+
+val HaEntityState.hvacModes: List<String> get() = stringList("hvac_modes")
+
+/** Informational only (idle/heating/cooling/drying...); not settable. */
+val HaEntityState.hvacAction: String?
+    get() = (attribute("hvac_action") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.fanMode: String?
+    get() = (attribute("fan_mode") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.fanModes: List<String> get() = stringList("fan_modes")
+
+val HaEntityState.swingMode: String?
+    get() = (attribute("swing_mode") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.swingModes: List<String> get() = stringList("swing_modes")
+
+val HaEntityState.currentHumidity: Double?
+    get() = (attribute("current_humidity") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.targetHumidity: Double?
+    get() = (attribute("humidity") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.minTemp: Double
+    get() = (attribute("min_temp") as? JsonPrimitive)?.doubleOrNull ?: 7.0
+
+val HaEntityState.maxTemp: Double
+    get() = (attribute("max_temp") as? JsonPrimitive)?.doubleOrNull ?: 35.0
+
+val HaEntityState.targetTempStep: Double
+    get() = (attribute("target_temp_step") as? JsonPrimitive)?.doubleOrNull ?: 0.5

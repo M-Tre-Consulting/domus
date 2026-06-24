@@ -84,6 +84,7 @@ fun DashboardScreen(
     favoriteEntityIds: Set<String>,
     onEditEntities: () -> Unit,
     onLogout: () -> Unit,
+    onOpenClimateDetail: (String) -> Unit,
 ) {
     val entities by session.repository.entities.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -188,7 +189,15 @@ fun DashboardScreen(
                             DomainHeader(label)
                         }
                         items(entitiesInGroup, key = { it.entityId }) { entity ->
-                            EntityCard(entity = entity, onCallService = ::callService)
+                            EntityCard(
+                                entity = entity,
+                                onCallService = ::callService,
+                                onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
+                                    { onOpenClimateDetail(entity.entityId) }
+                                } else {
+                                    null
+                                },
+                            )
                         }
                     }
                 }
@@ -212,11 +221,21 @@ private fun DomainHeader(label: String) {
 }
 
 @Composable
-private fun EntityCard(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
+private fun EntityCard(
+    entity: HaEntityState,
+    onCallService: (HaServiceCall) -> Unit,
+    onOpenDetail: (() -> Unit)? = null,
+) {
     val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
         (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
 
-    Card(modifier = Modifier.padding(bottom = DesignTokens.Spacing.sm.dp)) {
+    val cardModifier = if (onOpenDetail != null) {
+        Modifier.padding(bottom = DesignTokens.Spacing.sm.dp).clickable(onClick = onOpenDetail)
+    } else {
+        Modifier.padding(bottom = DesignTokens.Spacing.sm.dp)
+    }
+
+    Card(modifier = cardModifier) {
         Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
