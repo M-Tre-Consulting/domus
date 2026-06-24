@@ -4,11 +4,6 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!--
-      Single house silhouette (roof + walls, rounded bottom corners) with a door cut out
-      via even-odd fill, so the background color shows through — a flat, single-glyph
-      home mark instead of two stacked shapes.
-    -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
