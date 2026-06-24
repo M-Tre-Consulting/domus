@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
@@ -37,9 +39,9 @@ kotlin {
     }
 }
 
-android {
+configure<LibraryExtension> {
     namespace = "dev.domus.shared"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 31

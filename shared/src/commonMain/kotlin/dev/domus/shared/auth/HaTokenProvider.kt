@@ -4,7 +4,7 @@ import dev.domus.shared.api.HaOAuthClient
 import dev.domus.shared.model.HaCredentials
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 private const val REFRESH_BUFFER_MILLIS = 60_000L
 
