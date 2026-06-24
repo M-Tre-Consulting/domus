@@ -1,5 +1,9 @@
 package dev.domus.android.ui.screens
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,13 +11,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
@@ -27,6 +32,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -39,11 +45,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -78,6 +85,23 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /** Domains where `homeassistant.toggle` is a meaningful action, not just a read-only sensor. */
 private val TOGGLEABLE_DOMAINS = setOf("light", "switch", "fan", "automation", "input_boolean", "siren")
+
+/** Domains simple enough to render as a compact half-width tile instead of a full-width card. */
+private val TILE_DOMAINS = TOGGLEABLE_DOMAINS + setOf("binary_sensor", "sensor")
+
+private val ACTIVE_STATES = setOf(
+    "on", "playing", "heat", "cool", "heat_cool", "dry", "fan_only", "auto", "cleaning", "home", "triggered",
+)
+
+/** Whether an entity is in a state worth visually highlighting (lit up, running, unlocked, open...). */
+private fun isActiveState(domain: String, state: String): Boolean {
+    val s = state.lowercase()
+    return when (domain) {
+        "lock" -> s == "unlocked"
+        "cover", "valve" -> s == "open"
+        else -> s in ACTIVE_STATES
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -190,24 +214,37 @@ fun DashboardScreen(
                         CircularProgressIndicator()
                     }
 
-                    else -> LazyColumn(
+                    else -> LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
+                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
+                        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
                     ) {
                         groupedEntities.forEach { (label, entitiesInGroup) ->
-                            stickyHeader(key = "header_$label") {
+                            item(key = "header_$label", span = { GridItemSpan(maxLineSpan) }) {
                                 DomainHeader(label)
                             }
-                            items(entitiesInGroup, key = { it.entityId }) { entity ->
-                                EntityCard(
-                                    entity = entity,
-                                    onCallService = ::callService,
-                                    onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
-                                        { onOpenClimateDetail(entity.entityId) }
-                                    } else {
-                                        null
-                                    },
-                                )
+                            items(
+                                entitiesInGroup,
+                                key = { it.entityId },
+                                span = { entity ->
+                                    if (entity.domain in TILE_DOMAINS) GridItemSpan(1) else GridItemSpan(maxLineSpan)
+                                },
+                            ) { entity ->
+                                if (entity.domain in TILE_DOMAINS) {
+                                    EntityTile(entity = entity, onCallService = ::callService)
+                                } else {
+                                    EntityCard(
+                                        entity = entity,
+                                        onCallService = ::callService,
+                                        onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
+                                            { onOpenClimateDetail(entity.entityId) }
+                                        } else {
+                                            null
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -219,45 +256,127 @@ fun DashboardScreen(
 
 @Composable
 private fun DomainHeader(label: String) {
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = DesignTokens.Spacing.sm.dp),
-        )
+    Text(
+        text = label,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = DesignTokens.Spacing.sm.dp),
+    )
+}
+
+@Composable
+private fun EntityIconBadge(domain: String, isActive: Boolean, size: Int = 40) {
+    Surface(
+        shape = CircleShape,
+        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.size(size.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = iconForDomain(domain),
+                contentDescription = null,
+                tint = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size((size * 0.55f).dp),
+            )
+        }
     }
 }
 
+/** Compact half-width card for simple on/off entities and read-only sensors. */
+@Composable
+private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
+    val isActive = isActiveState(entity.domain, entity.state)
+    val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
+        (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
+
+    Card(
+        shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EntityIconBadge(domain = entity.domain, isActive = isActive)
+                if (isToggleable) {
+                    Switch(
+                        checked = entity.state.equals("on", ignoreCase = true),
+                        onCheckedChange = {
+                            onCallService(
+                                HaServiceCall(domain = "homeassistant", service = "toggle", entityId = entity.entityId),
+                            )
+                        },
+                    )
+                }
+            }
+            Text(
+                text = entity.friendlyName,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = DesignTokens.Spacing.sm.dp),
+            )
+            Text(
+                text = entity.state.toDisplayLabel(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** Full-width card for entities that need extra controls (sliders, dials, chips, buttons). */
 @Composable
 private fun EntityCard(
     entity: HaEntityState,
     onCallService: (HaServiceCall) -> Unit,
     onOpenDetail: (() -> Unit)? = null,
 ) {
+    val isActive = isActiveState(entity.domain, entity.state)
     val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
         (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
 
     val cardModifier = if (onOpenDetail != null) {
-        Modifier.padding(bottom = DesignTokens.Spacing.sm.dp).clickable(onClick = onOpenDetail)
+        Modifier.fillMaxWidth().clickable(onClick = onOpenDetail)
     } else {
-        Modifier.padding(bottom = DesignTokens.Spacing.sm.dp)
+        Modifier.fillMaxWidth()
     }
 
-    Card(modifier = cardModifier) {
+    Card(
+        shape = RoundedCornerShape(DesignTokens.Shape.cornerMedium.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
+        ),
+        modifier = cardModifier,
+    ) {
         Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp).animateContentSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = iconForDomain(entity.domain),
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp),
-                )
-                Column(modifier = Modifier.weight(1f)) {
+                EntityIconBadge(domain = entity.domain, isActive = isActive)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = DesignTokens.Spacing.md.dp),
+                ) {
                     Text(text = entity.friendlyName, style = MaterialTheme.typography.titleSmall)
                     Text(text = entity.state.toDisplayLabel(), style = MaterialTheme.typography.bodyMedium)
                 }
