@@ -1,0 +1,47 @@
+# Claude
+CLAUDE.md
+.claude/settings.local.json
+
+# Gradle
+.gradle/
+build/
+out/
+**/build/
+
+# Local configuration
+local.properties
+*.hprof
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+
+# Keystores (never commit signing material)
+*.jks
+*.keystore
+
+# Compose Desktop / JVM
+*.log
+hs_err_pid*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VCS
+*.orig
