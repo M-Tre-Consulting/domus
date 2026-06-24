@@ -26,6 +26,12 @@ data class HaConnectionConfig(
 ) {
     val websocketUrl: String
         get() = baseUrl.replaceFirst("https://", "wss://").replaceFirst("http://", "ws://") + "/api/websocket"
+
+    companion object {
+        /** Normalizes a user-entered URL (trims whitespace and any trailing slash). */
+        fun of(baseUrl: String, accessToken: String) =
+            HaConnectionConfig(baseUrl.trim().trimEnd('/'), accessToken.trim())
+    }
 }
 
 /** A request to invoke a Home Assistant service (e.g. `light.turn_on`). */

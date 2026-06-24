@@ -7,10 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dev.domus.android.data.HaSessionHolder
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.theme.DomusTheme
@@ -48,7 +50,17 @@ private fun DomusNavHost() {
             )
         }
         composable(Routes.DASHBOARD) {
-            DashboardScreen()
+            val session = HaSessionHolder.session
+            if (session == null) {
+                // Process death or direct navigation without connecting first.
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) {
+                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                    }
+                }
+            } else {
+                DashboardScreen(session)
+            }
         }
     }
 }
