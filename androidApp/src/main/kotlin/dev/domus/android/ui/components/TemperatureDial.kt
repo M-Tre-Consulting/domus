@@ -1,5 +1,7 @@
 package dev.domus.android.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -9,9 +11,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +29,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 private const val START_ANGLE_DEG = 135f
 private const val SWEEP_ANGLE_DEG = 270f
@@ -35,7 +40,9 @@ private val STROKE_WIDTH = 20.dp
  * A circular thermostat-style dial in the Google Home style: a single-color track with a
  * draggable handle at the target temperature, and a small static marker + floating label
  * showing the current ambient temperature. Drag anywhere on the ring to retarget; the
- * 90-degree gap at the bottom is intentional.
+ * 90-degree gap at the bottom is intentional. Dragging moves the handle immediately;
+ * updates that arrive from outside (e.g. another client changing the setpoint) animate
+ * smoothly into place instead of snapping.
  */
 @Composable
 fun TemperatureDial(
@@ -49,10 +56,18 @@ fun TemperatureDial(
     onTargetChange: (Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var dragTarget by remember(target) { mutableFloatStateOf(target.toFloat()) }
+    val animatedTarget = remember { Animatable(target.toFloat()) }
+    var isDragging by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val handleColor = MaterialTheme.colorScheme.primary
     val currentMarkerColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    LaunchedEffect(target) {
+        if (!isDragging) {
+            animatedTarget.animateTo(target.toFloat(), animationSpec = tween(durationMillis = 300))
+        }
+    }
 
     fun fractionFor(value: Double) = ((value - minValue) / (maxValue - minValue)).coerceIn(0.0, 1.0)
     fun angleForFraction(fraction: Double) = START_ANGLE_DEG + SWEEP_ANGLE_DEG * fraction
@@ -77,6 +92,7 @@ fun TemperatureDial(
             .pointerInput(enabled, minValue, maxValue, step) {
                 if (!enabled) return@pointerInput
                 detectDragGestures(
+                    onDragStart = { isDragging = true },
                     onDrag = { change, _ ->
                         change.consume()
                         val center = Offset(size.width / 2f, size.height / 2f)
@@ -84,9 +100,14 @@ fun TemperatureDial(
                         val angleDeg = Math.toDegrees(
                             atan2((pos.y - center.y).toDouble(), (pos.x - center.x).toDouble()),
                         ).toFloat().let { if (it < 0f) it + 360f else it }
-                        dragTarget = angleToValue(angleDeg)
+                        val newValue = angleToValue(angleDeg)
+                        scope.launch { animatedTarget.snapTo(newValue) }
                     },
-                    onDragEnd = { onTargetChange(dragTarget.toDouble()) },
+                    onDragEnd = {
+                        isDragging = false
+                        onTargetChange(animatedTarget.value.toDouble())
+                    },
+                    onDragCancel = { isDragging = false },
                 )
             },
         contentAlignment = Alignment.Center,
@@ -117,7 +138,7 @@ fun TemperatureDial(
                 drawCircle(color = currentMarkerColor, radius = 6.dp.toPx(), center = markerPos)
             }
 
-            val handleAngleRad = Math.toRadians(angleForFraction(fractionFor(dragTarget.toDouble())).toDouble())
+            val handleAngleRad = Math.toRadians(angleForFraction(fractionFor(animatedTarget.value.toDouble())).toDouble())
             val handlePos = Offset(
                 center.x + radius * cos(handleAngleRad).toFloat(),
                 center.y + radius * sin(handleAngleRad).toFloat(),
@@ -140,7 +161,10 @@ fun TemperatureDial(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = formatTemp(dragTarget.toDouble(), step) + unit, style = MaterialTheme.typography.displayMedium)
+            Text(
+                text = formatTemp(animatedTarget.value.toDouble(), step) + unit,
+                style = MaterialTheme.typography.displayMedium,
+            )
         }
     }
 }
