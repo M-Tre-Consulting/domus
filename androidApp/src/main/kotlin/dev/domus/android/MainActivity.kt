@@ -28,7 +28,6 @@ import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.screens.EntityPickerScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.shared.data.HaSession
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -64,7 +63,7 @@ private fun DomusNavHost() {
     NavHost(navController = navController, startDestination = Routes.SPLASH) {
         composable(Routes.SPLASH) {
             LaunchedEffect(Unit) {
-                val savedConfig = connectionStore.connectionConfig.first()
+                val savedConfig = connectionStore.read()
                 val reconnected = savedConfig?.let { config ->
                     runCatching {
                         val session = HaSession(config)

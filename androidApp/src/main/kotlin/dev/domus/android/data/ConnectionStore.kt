@@ -1,42 +1,50 @@
 package dev.domus.android.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import dev.domus.shared.model.HaConnectionConfig
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-private val Context.connectionDataStore by preferencesDataStore(name = "domus_connection")
-private val BASE_URL_KEY = stringPreferencesKey("base_url")
-private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+private const val PREFS_FILE_NAME = "domus_connection_secure"
+private const val BASE_URL_KEY = "base_url"
+private const val ACCESS_TOKEN_KEY = "access_token"
 
 /**
- * Persists the active Home Assistant connection so the app doesn't ask to log in on every
- * launch. The token is stored as plain DataStore preferences — fine for a local scaffold,
- * but should move to `androidx.security` EncryptedSharedPreferences before any real use.
+ * Persists the active Home Assistant connection in an Android Keystore-backed
+ * [EncryptedSharedPreferences] file, so the long-lived access token isn't stored as
+ * plaintext on disk.
  */
 class ConnectionStore(private val context: Context) {
-    val connectionConfig: Flow<HaConnectionConfig?> =
-        context.connectionDataStore.data.map { prefs ->
-            val baseUrl = prefs[BASE_URL_KEY]
-            val accessToken = prefs[ACCESS_TOKEN_KEY]
-            if (baseUrl != null && accessToken != null) {
-                HaConnectionConfig(baseUrl, accessToken)
-            } else {
-                null
-            }
-        }
+    private val prefs by lazy {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
 
-    suspend fun save(config: HaConnectionConfig) {
-        context.connectionDataStore.edit { prefs ->
-            prefs[BASE_URL_KEY] = config.baseUrl
-            prefs[ACCESS_TOKEN_KEY] = config.accessToken
-        }
+        EncryptedSharedPreferences.create(
+            context,
+            PREFS_FILE_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
     }
 
-    suspend fun clear() {
-        context.connectionDataStore.edit { it.clear() }
+    suspend fun read(): HaConnectionConfig? = withContext(Dispatchers.IO) {
+        val baseUrl = prefs.getString(BASE_URL_KEY, null)
+        val accessToken = prefs.getString(ACCESS_TOKEN_KEY, null)
+        if (baseUrl != null && accessToken != null) HaConnectionConfig(baseUrl, accessToken) else null
+    }
+
+    suspend fun save(config: HaConnectionConfig) = withContext(Dispatchers.IO) {
+        prefs.edit()
+            .putString(BASE_URL_KEY, config.baseUrl)
+            .putString(ACCESS_TOKEN_KEY, config.accessToken)
+            .apply()
+    }
+
+    suspend fun clear() = withContext(Dispatchers.IO) {
+        prefs.edit().clear().apply()
     }
 }
