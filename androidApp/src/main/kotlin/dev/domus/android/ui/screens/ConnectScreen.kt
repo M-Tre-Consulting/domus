@@ -32,10 +32,11 @@ import kotlinx.coroutines.launch
 
 /**
  * First-run screen: ask for the Home Assistant base URL and a long-lived access token,
- * verify the connection against `/api/`, then hand a connected [HaSession] to the caller.
+ * verify the connection against `/api/`, then hand the validated [HaConnectionConfig] to
+ * the caller (which is responsible for persisting it).
  */
 @Composable
-fun ConnectScreen(onConnected: () -> Unit) {
+fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
     var baseUrl by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
     var isConnecting by remember { mutableStateOf(false) }
@@ -98,7 +99,7 @@ fun ConnectScreen(onConnected: () -> Unit) {
                         val session = HaSession(config)
                         if (session.restApi.checkConnection()) {
                             HaSessionHolder.session = session
-                            onConnected()
+                            onConnected(config)
                         } else {
                             errorMessage = "Connection rejected — check the URL and token."
                         }
