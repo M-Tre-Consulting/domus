@@ -6,6 +6,19 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// Release signing comes from an existing JKS keystore, supplied via Gradle properties
+// (CI passes these via -P flags backed by secrets). Builds without them still work
+// locally — assembleRelease just produces an unsigned APK.
+val releaseStoreFile = (project.findProperty("domus.signing.storeFile") as String?)
+    ?.let { file(it) }
+val releaseStorePassword = project.findProperty("domus.signing.storePassword") as String?
+val releaseKeyAlias = project.findProperty("domus.signing.keyAlias") as String?
+val releaseKeyPassword = project.findProperty("domus.signing.keyPassword") as String?
+val hasReleaseSigning = releaseStoreFile != null &&
+    releaseStorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
+
 configure<ApplicationExtension> {
     namespace = "dev.domus.android"
     compileSdk = 37
@@ -14,8 +27,8 @@ configure<ApplicationExtension> {
         applicationId = "dev.domus.android"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = project.findProperty("versionName") as String? ?: "0.1.0"
     }
 
     buildFeatures {
@@ -27,11 +40,25 @@ configure<ApplicationExtension> {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
