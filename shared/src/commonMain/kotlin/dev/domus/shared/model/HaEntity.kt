@@ -22,15 +22,21 @@ data class HaEntityState(
 /** Connection details for a Home Assistant instance. */
 data class HaConnectionConfig(
     val baseUrl: String,
-    val accessToken: String,
+    val credentials: HaCredentials,
 ) {
     val websocketUrl: String
         get() = baseUrl.replaceFirst("https://", "wss://").replaceFirst("http://", "ws://") + "/api/websocket"
 
     companion object {
         /** Normalizes a user-entered URL (trims whitespace and any trailing slash). */
-        fun of(baseUrl: String, accessToken: String) =
-            HaConnectionConfig(baseUrl.trim().trimEnd('/'), accessToken.trim())
+        fun withToken(baseUrl: String, accessToken: String) =
+            HaConnectionConfig(baseUrl.trim().trimEnd('/'), HaCredentials.LongLivedToken(accessToken.trim()))
+
+        fun withOAuthSession(baseUrl: String, accessToken: String, refreshToken: String, expiresAtEpochMillis: Long) =
+            HaConnectionConfig(
+                baseUrl.trim().trimEnd('/'),
+                HaCredentials.OAuthSession(accessToken, refreshToken, expiresAtEpochMillis),
+            )
     }
 }
 

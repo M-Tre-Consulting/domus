@@ -1,6 +1,6 @@
 package dev.domus.shared.api
 
-import dev.domus.shared.model.HaConnectionConfig
+import dev.domus.shared.auth.HaTokenProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
@@ -21,7 +21,8 @@ import kotlinx.serialization.json.put
  */
 class HaWebSocketClient(
     private val client: HttpClient,
-    private val config: HaConnectionConfig,
+    private val websocketUrl: String,
+    private val tokenProvider: HaTokenProvider,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -29,7 +30,7 @@ class HaWebSocketClient(
     val events: SharedFlow<JsonObject> = _events.asSharedFlow()
 
     suspend fun connectAndListen() {
-        client.webSocket(config.websocketUrl) {
+        client.webSocket(websocketUrl) {
             var messageId = 1
 
             // The first server message is always `auth_required`.
@@ -40,7 +41,7 @@ class HaWebSocketClient(
 
             send(Frame.Text(buildJsonObject {
                 put("type", "auth")
-                put("access_token", config.accessToken)
+                put("access_token", tokenProvider.accessToken())
             }.toString()))
 
             val authResult = json.parseToJsonElement((incoming.receive() as Frame.Text).readText()).jsonObject

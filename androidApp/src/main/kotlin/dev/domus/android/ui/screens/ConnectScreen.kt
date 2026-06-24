@@ -10,9 +10,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,12 +35,17 @@ import dev.domus.shared.model.HaConnectionConfig
 import kotlinx.coroutines.launch
 
 /**
- * First-run screen: ask for the Home Assistant base URL and a long-lived access token,
- * verify the connection against `/api/`, then hand the validated [HaConnectionConfig] to
- * the caller (which is responsible for persisting it).
+ * First-run screen: connect either with a long-lived access token, or by signing in through
+ * Home Assistant's own login page (handles 2FA natively, no token needed). Verifies the
+ * connection against `/api/` before handing the validated [HaConnectionConfig] to the caller.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
+fun ConnectScreen(
+    onConnected: (HaConnectionConfig) -> Unit,
+    onLoginWithHomeAssistant: (baseUrl: String) -> Unit,
+) {
+    var selectedTab by remember { mutableStateOf(0) }
     var baseUrl by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
     var isConnecting by remember { mutableStateOf(false) }
@@ -57,6 +66,27 @@ fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
         )
         Text(text = "Connect to Home Assistant", style = MaterialTheme.typography.headlineSmall)
 
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = DesignTokens.Spacing.lg.dp),
+        ) {
+            SegmentedButton(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0; errorMessage = null },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            ) {
+                Text("Log in", maxLines = 1)
+            }
+            SegmentedButton(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1; errorMessage = null },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            ) {
+                Text("Token", maxLines = 1)
+            }
+        }
+
         OutlinedTextField(
             value = baseUrl,
             onValueChange = { baseUrl = it; errorMessage = null },
@@ -70,15 +100,18 @@ fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
                 .fillMaxWidth()
                 .padding(top = DesignTokens.Spacing.lg.dp),
         )
-        OutlinedTextField(
-            value = token,
-            onValueChange = { token = it; errorMessage = null },
-            label = { Text("Long-lived access token") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = DesignTokens.Spacing.sm.dp),
-        )
+
+        if (selectedTab == 1) {
+            OutlinedTextField(
+                value = token,
+                onValueChange = { token = it; errorMessage = null },
+                label = { Text("Long-lived access token") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = DesignTokens.Spacing.sm.dp),
+            )
+        }
 
         if (errorMessage != null) {
             Text(
@@ -89,13 +122,17 @@ fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
         }
 
         Button(
-            enabled = !isConnecting && baseUrl.isNotBlank() && token.isNotBlank(),
+            enabled = !isConnecting && baseUrl.isNotBlank() && (selectedTab == 0 || token.isNotBlank()),
             onClick = {
+                if (selectedTab == 0) {
+                    onLoginWithHomeAssistant(baseUrl.trim().trimEnd('/'))
+                    return@Button
+                }
                 errorMessage = null
                 isConnecting = true
                 scope.launch {
                     try {
-                        val config = HaConnectionConfig.of(baseUrl, token)
+                        val config = HaConnectionConfig.withToken(baseUrl, token)
                         val session = HaSession(config)
                         if (session.restApi.checkConnection()) {
                             HaSessionHolder.session = session
@@ -117,7 +154,7 @@ fun ConnectScreen(onConnected: (HaConnectionConfig) -> Unit) {
             if (isConnecting) {
                 CircularProgressIndicator(modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp))
             }
-            Text("Connect")
+            Text(if (selectedTab == 0) "Continue" else "Connect")
         }
     }
 }

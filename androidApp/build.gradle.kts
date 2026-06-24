@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.client.core)
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

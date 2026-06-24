@@ -1,6 +1,6 @@
 package dev.domus.shared.api
 
-import dev.domus.shared.model.HaConnectionConfig
+import dev.domus.shared.auth.HaTokenProvider
 import dev.domus.shared.model.HaEntityState
 import dev.domus.shared.model.HaServiceCall
 import io.ktor.client.HttpClient
@@ -21,11 +21,12 @@ class HaApiException(message: String, val statusCode: Int? = null) : Exception(m
 /** Thin wrapper over Home Assistant's REST API (https://developers.home-assistant.io/docs/api/rest/). */
 class HaRestApi(
     private val client: HttpClient,
-    private val config: HaConnectionConfig,
+    private val baseUrl: String,
+    private val tokenProvider: HaTokenProvider,
 ) {
     suspend fun getStates(): List<HaEntityState> {
-        val response = client.get("${config.baseUrl}/api/states") {
-            header("Authorization", "Bearer ${config.accessToken}")
+        val response = client.get("$baseUrl/api/states") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
         }
         if (!response.status.isSuccess()) {
             throw HaApiException("Failed to fetch states", response.status.value)
@@ -34,8 +35,8 @@ class HaRestApi(
     }
 
     suspend fun getState(entityId: String): HaEntityState {
-        val response = client.get("${config.baseUrl}/api/states/$entityId") {
-            header("Authorization", "Bearer ${config.accessToken}")
+        val response = client.get("$baseUrl/api/states/$entityId") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
         }
         if (!response.status.isSuccess()) {
             throw HaApiException("Failed to fetch state for $entityId", response.status.value)
@@ -48,8 +49,8 @@ class HaRestApi(
             call.entityId?.let { put("entity_id", JsonPrimitive(it)) }
             putAll(call.data)
         }
-        val response = client.post("${config.baseUrl}/api/services/${call.domain}/${call.service}") {
-            header("Authorization", "Bearer ${config.accessToken}")
+        val response = client.post("$baseUrl/api/services/${call.domain}/${call.service}") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
             contentType(ContentType.Application.Json)
             setBody(JsonObject(body))
         }
@@ -60,8 +61,8 @@ class HaRestApi(
     }
 
     suspend fun checkConnection(): Boolean {
-        val response = client.get("${config.baseUrl}/api/") {
-            header("Authorization", "Bearer ${config.accessToken}")
+        val response = client.get("$baseUrl/api/") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
         }
         return response.status.isSuccess()
     }

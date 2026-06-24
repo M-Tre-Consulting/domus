@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,12 +29,19 @@ import androidx.navigation.navArgument
 import dev.domus.android.data.ConnectionStore
 import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
+import dev.domus.android.data.OnboardingStore
 import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.screens.EntityPickerScreen
+import dev.domus.android.ui.screens.OAuthLoginScreen
+import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.shared.data.HaSession
+import dev.domus.shared.model.HaConnectionConfig
+import dev.domus.shared.model.HaCredentials
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -49,11 +60,14 @@ class MainActivity : ComponentActivity() {
 
 object Routes {
     const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
     const val CONNECT = "connect"
     const val DASHBOARD = "dashboard"
     const val PICKER = "picker"
     const val CLIMATE_DETAIL = "climate_detail"
     const val CLIMATE_DETAIL_ARG = "entityId"
+    const val OAUTH_LOGIN = "oauth_login"
+    const val OAUTH_LOGIN_ARG = "baseUrl"
 }
 
 @Composable
@@ -62,16 +76,28 @@ private fun DomusNavHost() {
     val context = LocalContext.current
     val connectionStore = remember { ConnectionStore(context.applicationContext) }
     val favoritesStore = remember { FavoritesStore(context.applicationContext) }
+    val onboardingStore = remember { OnboardingStore(context.applicationContext) }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState(initial = emptySet())
     val scope = rememberCoroutineScope()
 
-    NavHost(navController = navController, startDestination = Routes.SPLASH) {
+    fun persistRefreshed(baseUrl: String): suspend (HaCredentials.OAuthSession) -> Unit = { refreshed ->
+        connectionStore.save(HaConnectionConfig(baseUrl, refreshed))
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = Routes.SPLASH,
+        enterTransition = { slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() },
+    ) {
         composable(Routes.SPLASH) {
             LaunchedEffect(Unit) {
                 val savedConfig = connectionStore.read()
                 val reconnected = savedConfig?.let { config ->
                     runCatching {
-                        val session = HaSession(config)
+                        val session = HaSession(config, persistRefreshed(config.baseUrl))
                         if (session.restApi.checkConnection()) session else null
                     }.getOrNull()
                 }
@@ -79,6 +105,10 @@ private fun DomusNavHost() {
                 if (reconnected != null) {
                     HaSessionHolder.session = reconnected
                     navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                } else if (!onboardingStore.hasSeenOnboarding()) {
+                    navController.navigate(Routes.ONBOARDING) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 } else {
@@ -91,6 +121,16 @@ private fun DomusNavHost() {
                 CircularProgressIndicator()
             }
         }
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onFinished = {
+                    scope.launch { onboardingStore.markSeen() }
+                    navController.navigate(Routes.CONNECT) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Routes.CONNECT) {
             ConnectScreen(
                 onConnected = { config ->
@@ -99,7 +139,33 @@ private fun DomusNavHost() {
                         popUpTo(Routes.CONNECT) { inclusive = true }
                     }
                 },
+                onLoginWithHomeAssistant = { baseUrl ->
+                    val encoded = URLEncoder.encode(baseUrl, "UTF-8")
+                    navController.navigate("${Routes.OAUTH_LOGIN}/$encoded")
+                },
             )
+        }
+        composable(
+            route = "${Routes.OAUTH_LOGIN}/{${Routes.OAUTH_LOGIN_ARG}}",
+            arguments = listOf(navArgument(Routes.OAUTH_LOGIN_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val encodedBaseUrl = backStackEntry.arguments?.getString(Routes.OAUTH_LOGIN_ARG)
+            if (encodedBaseUrl == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            } else {
+                val baseUrl = URLDecoder.decode(encodedBaseUrl, "UTF-8")
+                OAuthLoginScreen(
+                    baseUrl = baseUrl,
+                    onConnected = { config ->
+                        scope.launch { connectionStore.save(config) }
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.CONNECT) { inclusive = true }
+                        }
+                    },
+                    onCredentialsRefreshed = persistRefreshed(baseUrl),
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
         composable(Routes.DASHBOARD) {
             val session = HaSessionHolder.session
