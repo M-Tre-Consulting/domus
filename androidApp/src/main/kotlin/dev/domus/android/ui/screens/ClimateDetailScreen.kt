@@ -305,5 +305,3 @@ private fun InfoCard(rows: List<Pair<String, String>>) {
         }
     }
 }
-
-private fun String.toDisplayLabel(): String = replace('_', ' ').replaceFirstChar { it.uppercase() }
