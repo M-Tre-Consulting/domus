@@ -13,6 +13,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +42,7 @@ fun EntityPickerScreen(
 ) {
     val entities by session.repository.entities.collectAsState()
     var selection by remember(initialSelection) { mutableStateOf(initialSelection) }
+    var query by remember { mutableStateOf("") }
 
     LaunchedEffect(session) {
         if (entities.isEmpty()) {
@@ -66,40 +68,59 @@ fun EntityPickerScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(entities.values.sortedBy { it.friendlyName }, key = { it.entityId }) { entity ->
-                    val isSelected = entity.entityId in selection
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selection = if (isSelected) {
-                                    selection - entity.entityId
-                                } else {
-                                    selection + entity.entityId
-                                }
-                            }
-                            .padding(
-                                horizontal = DesignTokens.Spacing.md.dp,
-                                vertical = DesignTokens.Spacing.sm.dp,
-                            ),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = { checked ->
-                                    selection = if (checked) {
-                                        selection + entity.entityId
-                                    } else {
+            val filteredEntities = entities.values
+                .filter { entity ->
+                    query.isBlank() ||
+                        entity.friendlyName.contains(query, ignoreCase = true) ||
+                        entity.entityId.contains(query, ignoreCase = true)
+                }
+                .sortedBy { it.friendlyName }
+
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = DesignTokens.Spacing.md.dp, vertical = DesignTokens.Spacing.sm.dp),
+                )
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(filteredEntities, key = { it.entityId }) { entity ->
+                        val isSelected = entity.entityId in selection
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selection = if (isSelected) {
                                         selection - entity.entityId
+                                    } else {
+                                        selection + entity.entityId
                                     }
-                                },
-                            )
-                            Column(modifier = Modifier.padding(start = DesignTokens.Spacing.sm.dp)) {
-                                Text(text = entity.friendlyName, style = MaterialTheme.typography.bodyMedium)
-                                Text(text = entity.entityId, style = MaterialTheme.typography.bodySmall)
+                                }
+                                .padding(
+                                    horizontal = DesignTokens.Spacing.md.dp,
+                                    vertical = DesignTokens.Spacing.sm.dp,
+                                ),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { checked ->
+                                        selection = if (checked) {
+                                            selection + entity.entityId
+                                        } else {
+                                            selection - entity.entityId
+                                        }
+                                    },
+                                )
+                                Column(modifier = Modifier.padding(start = DesignTokens.Spacing.sm.dp)) {
+                                    Text(text = entity.friendlyName, style = MaterialTheme.typography.bodyMedium)
+                                    Text(text = entity.entityId, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

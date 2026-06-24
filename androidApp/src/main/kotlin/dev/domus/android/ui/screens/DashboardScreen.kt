@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +29,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -60,7 +63,7 @@ import kotlinx.serialization.json.JsonPrimitive
 /** Domains where `homeassistant.toggle` is a meaningful action, not just a read-only sensor. */
 private val TOGGLEABLE_DOMAINS = setOf("light", "switch", "fan", "automation", "input_boolean", "siren")
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DashboardScreen(
     session: HaSession,
@@ -70,6 +73,7 @@ fun DashboardScreen(
 ) {
     val entities by session.repository.entities.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -82,9 +86,24 @@ fun DashboardScreen(
         }
     }
 
-    val visibleEntities = entities.values
+    fun refresh() {
+        scope.launch {
+            isRefreshing = true
+            try {
+                session.repository.refresh()
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("Couldn't refresh: ${e.message}")
+            } finally {
+                isRefreshing = false
+            }
+        }
+    }
+
+    val groupedEntities = entities.values
         .filter { it.entityId in favoriteEntityIds }
         .sortedBy { it.friendlyName }
+        .groupBy { domainLabel(it.domain) }
+        .toSortedMap()
 
     fun callService(call: HaServiceCall) {
         scope.launch {
@@ -112,44 +131,69 @@ fun DashboardScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        when {
-            errorMessage != null -> Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = errorMessage.orEmpty(), color = MaterialTheme.colorScheme.error)
-            }
-
-            favoriteEntityIds.isEmpty() -> Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(text = "No entities chosen yet.")
-                Button(
-                    onClick = onEditEntities,
-                    modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = ::refresh,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            when {
+                errorMessage != null -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text("Choose entities")
+                    Text(text = errorMessage.orEmpty(), color = MaterialTheme.colorScheme.error)
                 }
-            }
 
-            entities.isEmpty() -> Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+                favoriteEntityIds.isEmpty() -> Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(text = "No entities chosen yet.")
+                    Button(
+                        onClick = onEditEntities,
+                        modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+                    ) {
+                        Text("Choose entities")
+                    }
+                }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
-            ) {
-                items(visibleEntities, key = { it.entityId }) { entity ->
-                    EntityCard(entity = entity, onCallService = ::callService)
+                entities.isEmpty() -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
+                ) {
+                    groupedEntities.forEach { (label, entitiesInGroup) ->
+                        stickyHeader(key = "header_$label") {
+                            DomainHeader(label)
+                        }
+                        items(entitiesInGroup, key = { it.entityId }) { entity ->
+                            EntityCard(entity = entity, onCallService = ::callService)
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DomainHeader(label: String) {
+    Surface(color = MaterialTheme.colorScheme.surface) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = DesignTokens.Spacing.sm.dp),
+        )
     }
 }
 

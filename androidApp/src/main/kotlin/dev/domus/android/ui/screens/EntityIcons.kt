@@ -32,3 +32,26 @@ fun iconForDomain(domain: String): ImageVector = when (domain) {
     "speaker" -> Icons.Filled.Speaker
     else -> Icons.Filled.DeviceUnknown
 }
+
+private val DOMAIN_LABELS = mapOf(
+    "light" to "Lights",
+    "switch" to "Switches",
+    "input_boolean" to "Toggles",
+    "fan" to "Fans",
+    "automation" to "Automations",
+    "binary_sensor" to "Sensors",
+    "sensor" to "Sensors",
+    "climate" to "Climate",
+    "media_player" to "Media Players",
+    "button" to "Buttons",
+    "lock" to "Locks",
+    "cover" to "Covers",
+    "garage_door" to "Garage Doors",
+    "camera" to "Cameras",
+    "speaker" to "Speakers",
+)
+
+/** Human-readable section title for a domain, e.g. "binary_sensor" -> "Sensors". */
+fun domainLabel(domain: String): String =
+    DOMAIN_LABELS[domain] ?: domain.replace('_', ' ').replaceFirstChar { it.uppercase() }
+
