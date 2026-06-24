@@ -89,7 +89,7 @@ fun OAuthLoginScreen(
                                     )
                                     val session = HaSession(config, onCredentialsRefreshed)
                                     if (session.restApi.checkConnection()) {
-                                        HaSessionHolder.session = session
+                                        HaSessionHolder.connect(session)
                                         onConnected(config)
                                     } else {
                                         snackbarHostState.showSnackbar("Home Assistant rejected the new session.")

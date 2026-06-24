@@ -118,12 +118,17 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // Refresh + realtime updates are started once at connect time (HaSessionHolder.connect),
+    // not here — a screen's LaunchedEffect gets cancelled as soon as you navigate away from
+    // it, which previously killed the WebSocket connection while viewing other screens. This
+    // is just a fallback for the rare case where that initial refresh hadn't completed yet.
     LaunchedEffect(session) {
-        try {
-            session.repository.refresh()
-            session.repository.startRealtimeUpdates(this)
-        } catch (e: Exception) {
-            errorMessage = "Couldn't load entities: ${e.message}"
+        if (session.repository.entities.value.isEmpty()) {
+            try {
+                session.repository.refresh()
+            } catch (e: Exception) {
+                errorMessage = "Couldn't load entities: ${e.message}"
+            }
         }
     }
 

@@ -103,7 +103,7 @@ private fun DomusNavHost() {
                 }
 
                 if (reconnected != null) {
-                    HaSessionHolder.session = reconnected
+                    HaSessionHolder.connect(reconnected)
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
@@ -183,7 +183,7 @@ private fun DomusNavHost() {
                     onEditEntities = { navController.navigate(Routes.PICKER) },
                     onLogout = {
                         scope.launch { connectionStore.clear() }
-                        HaSessionHolder.session = null
+                        HaSessionHolder.disconnect()
                         navController.navigate(Routes.CONNECT) {
                             popUpTo(Routes.DASHBOARD) { inclusive = true }
                         }

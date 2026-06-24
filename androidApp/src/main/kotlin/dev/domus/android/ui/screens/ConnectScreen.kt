@@ -135,7 +135,7 @@ fun ConnectScreen(
                         val config = HaConnectionConfig.withToken(baseUrl, token)
                         val session = HaSession(config)
                         if (session.restApi.checkConnection()) {
-                            HaSessionHolder.session = session
+                            HaSessionHolder.connect(session)
                             onConnected(config)
                         } else {
                             errorMessage = "Connection rejected — check the URL and token."
