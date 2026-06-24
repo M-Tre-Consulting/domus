@@ -1,9 +1,11 @@
 package dev.domus.android.ui.screens
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.ArrowDropDownCircle
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.CleaningServices
@@ -16,11 +18,14 @@ import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Plumbing
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.ToggleOn
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /** Best-effort icon per HA entity domain; falls back to a generic device icon. */
@@ -78,3 +83,14 @@ private val DOMAIN_LABELS = mapOf(
 /** Human-readable section title for a domain, e.g. "binary_sensor" -> "Sensors". */
 fun domainLabel(domain: String): String =
     DOMAIN_LABELS[domain] ?: domain.replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+/** Icon per HVAC mode, matching the convention most HA thermostat cards use. */
+fun iconForHvacMode(mode: String): ImageVector = when (mode.lowercase()) {
+    "cool" -> Icons.Filled.AcUnit
+    "heat" -> Icons.Filled.Whatshot
+    "dry" -> Icons.Filled.WaterDrop
+    "fan_only" -> Icons.Filled.Air
+    "auto", "heat_cool" -> Icons.Filled.Autorenew
+    "off" -> Icons.Filled.PowerSettingsNew
+    else -> Icons.Filled.Thermostat
+}

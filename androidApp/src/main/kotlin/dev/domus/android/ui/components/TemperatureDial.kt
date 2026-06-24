@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,15 +22,20 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 private const val START_ANGLE_DEG = 135f
 private const val SWEEP_ANGLE_DEG = 270f
+private val DIAL_SIZE = 260.dp
+private val STROKE_WIDTH = 20.dp
 
 /**
- * A circular thermostat-style dial: drag anywhere on the ring to choose a target
- * temperature within [minValue, maxValue], snapped to [step]. The 90-degree gap at the
- * bottom is intentional (matches the common Nest/HA thermostat-card layout).
+ * A circular thermostat-style dial in the Google Home style: a single-color track with a
+ * draggable handle at the target temperature, and a small static marker + floating label
+ * showing the current ambient temperature. Drag anywhere on the ring to retarget; the
+ * 90-degree gap at the bottom is intentional.
  */
 @Composable
 fun TemperatureDial(
@@ -45,7 +51,11 @@ fun TemperatureDial(
 ) {
     var dragTarget by remember(target) { mutableFloatStateOf(target.toFloat()) }
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val progressColor = MaterialTheme.colorScheme.primary
+    val handleColor = MaterialTheme.colorScheme.primary
+    val currentMarkerColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    fun fractionFor(value: Double) = ((value - minValue) / (maxValue - minValue)).coerceIn(0.0, 1.0)
+    fun angleForFraction(fraction: Double) = START_ANGLE_DEG + SWEEP_ANGLE_DEG * fraction
 
     fun angleToValue(angleDeg: Float): Float {
         var relative = (angleDeg - START_ANGLE_DEG) % 360f
@@ -57,9 +67,13 @@ fun TemperatureDial(
         return stepped.toFloat().coerceIn(minValue.toFloat(), maxValue.toFloat())
     }
 
+    val ringRadiusDp = (DIAL_SIZE - STROKE_WIDTH) / 2
+    val labelRadiusDp = ringRadiusDp + 28.dp
+    val centerDp = DIAL_SIZE / 2
+
     Box(
         modifier = modifier
-            .size(240.dp)
+            .size(DIAL_SIZE)
             .pointerInput(enabled, minValue, maxValue, step) {
                 if (!enabled) return@pointerInput
                 detectDragGestures(
@@ -77,11 +91,12 @@ fun TemperatureDial(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(240.dp)) {
-            val strokeWidth = 18.dp.toPx()
-            val radius = (size.minDimension - strokeWidth) / 2f
+        Canvas(modifier = Modifier.size(DIAL_SIZE)) {
+            val strokeWidthPx = STROKE_WIDTH.toPx()
+            val radius = (size.minDimension - strokeWidthPx) / 2f
             val topLeft = Offset((size.width - radius * 2) / 2f, (size.height - radius * 2) / 2f)
             val arcSize = Size(radius * 2, radius * 2)
+            val center = Offset(size.width / 2f, size.height / 2f)
 
             drawArc(
                 color = trackColor,
@@ -90,26 +105,45 @@ fun TemperatureDial(
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
             )
 
-            val valueFraction = ((dragTarget - minValue) / (maxValue - minValue)).coerceIn(0.0, 1.0)
-            drawArc(
-                color = progressColor,
-                startAngle = START_ANGLE_DEG,
-                sweepAngle = (SWEEP_ANGLE_DEG * valueFraction).toFloat(),
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            if (current != null) {
+                val angleRad = Math.toRadians(angleForFraction(fractionFor(current)).toDouble())
+                val markerPos = Offset(
+                    center.x + radius * cos(angleRad).toFloat(),
+                    center.y + radius * sin(angleRad).toFloat(),
+                )
+                drawCircle(color = currentMarkerColor, radius = 6.dp.toPx(), center = markerPos)
+            }
+
+            val handleAngleRad = Math.toRadians(angleForFraction(fractionFor(dragTarget.toDouble())).toDouble())
+            val handlePos = Offset(
+                center.x + radius * cos(handleAngleRad).toFloat(),
+                center.y + radius * sin(handleAngleRad).toFloat(),
+            )
+            drawCircle(color = handleColor, radius = strokeWidthPx / 2f + 4.dp.toPx(), center = handlePos)
+        }
+
+        if (current != null) {
+            val angleRad = Math.toRadians(angleForFraction(fractionFor(current)).toDouble())
+            val labelX = centerDp + labelRadiusDp * cos(angleRad).toFloat()
+            val labelY = centerDp + labelRadiusDp * sin(angleRad).toFloat()
+            Text(
+                text = formatTemp(current, step) + unit,
+                style = MaterialTheme.typography.labelLarge,
+                color = currentMarkerColor,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = labelX - 16.dp, y = labelY - 10.dp),
             )
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "%.1f%s".format(dragTarget, unit), style = MaterialTheme.typography.displaySmall)
-            if (current != null) {
-                Text(text = "Current %.1f%s".format(current, unit), style = MaterialTheme.typography.bodyMedium)
-            }
+            Text(text = formatTemp(dragTarget.toDouble(), step) + unit, style = MaterialTheme.typography.displayMedium)
         }
     }
 }
+
+private fun formatTemp(value: Double, step: Double): String =
+    if (step >= 1.0) value.roundToInt().toString() else "%.1f".format(value)
