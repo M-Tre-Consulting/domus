@@ -1,5 +1,6 @@
 package dev.domus.shared.model
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -31,3 +32,29 @@ val HaEntityState.mediaTitle: String?
 
 val HaEntityState.mediaArtist: String?
     get() = (attribute("media_artist") as? JsonPrimitive)?.contentOrNull
+
+/** Fan/cover/valve position or speed as a 0-100 percentage attribute. */
+val HaEntityState.percentage: Int?
+    get() = (attribute("percentage") as? JsonPrimitive)?.intOrNull
+
+val HaEntityState.currentPosition: Int?
+    get() = (attribute("current_position") as? JsonPrimitive)?.intOrNull
+
+/** Numeric value for `number`/`input_number` entities; the state itself is the value. */
+val HaEntityState.numericValue: Double?
+    get() = JsonPrimitive(state).doubleOrNull
+
+val HaEntityState.minValue: Double?
+    get() = (attribute("min") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.maxValue: Double?
+    get() = (attribute("max") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.step: Double
+    get() = (attribute("step") as? JsonPrimitive)?.doubleOrNull ?: 1.0
+
+/** Options list for `select`/`input_select` entities. */
+val HaEntityState.options: List<String>
+    get() = (attribute("options") as? JsonArray)
+        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+        ?: emptyList()
