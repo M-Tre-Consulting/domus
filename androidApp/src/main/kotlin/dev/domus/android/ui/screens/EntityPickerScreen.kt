@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
+import dev.domus.shared.model.friendlyName
 
 /** Lets the user choose which entities show up on the dashboard. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +67,7 @@ fun EntityPickerScreen(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(entities.values.sortedBy { it.entityId }, key = { it.entityId }) { entity ->
+                items(entities.values.sortedBy { it.friendlyName }, key = { it.entityId }) { entity ->
                     val isSelected = entity.entityId in selection
                     Column(
                         modifier = Modifier
@@ -97,8 +98,8 @@ fun EntityPickerScreen(
                                 },
                             )
                             Column(modifier = Modifier.padding(start = DesignTokens.Spacing.sm.dp)) {
-                                Text(text = entity.entityId, style = MaterialTheme.typography.bodyMedium)
-                                Text(text = entity.state, style = MaterialTheme.typography.bodySmall)
+                                Text(text = entity.friendlyName, style = MaterialTheme.typography.bodyMedium)
+                                Text(text = entity.entityId, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
