@@ -31,5 +31,3 @@ fun DomusTheme(
         content = content,
     )
 }
-
-val SeedColor = Color(DesignTokens.SEED_COLOR_ARGB)
