@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android blocks cleartext HTTP (http://) by default since API 28.
+  Home Assistant instances on the local network typically run on http://,
+  and domain-config cannot match IP addresses — connections to 192.168.x.x
+  always fall through to base-config. Permitting cleartext here lets the app
+  reach any HA instance regardless of whether it has TLS configured.
+  HTTPS connections to external URLs (e.g. ha.example.com) are unaffected;
+  they remain encrypted and validated by system CAs.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

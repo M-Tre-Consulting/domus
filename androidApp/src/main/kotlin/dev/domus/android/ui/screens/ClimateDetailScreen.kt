@@ -282,7 +282,7 @@ private fun SelectorPill(
 }
 
 @Composable
-private fun InfoCard(rows: List<Pair<String, String>>) {
+internal fun InfoCard(rows: List<Pair<String, String>>) {
     if (rows.isEmpty()) return
     Card(modifier = Modifier.fillMaxWidth().padding(top = DesignTokens.Spacing.lg.dp)) {
         Column {

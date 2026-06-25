@@ -75,6 +75,7 @@ import dev.domus.shared.model.maxValue
 import dev.domus.shared.model.mediaArtist
 import dev.domus.shared.model.mediaTitle
 import dev.domus.shared.model.minValue
+import dev.domus.shared.model.currentPowerW
 import dev.domus.shared.model.numericValue
 import dev.domus.shared.model.options
 import dev.domus.shared.model.percentage
@@ -86,8 +87,11 @@ import kotlinx.serialization.json.JsonPrimitive
 /** Domains where `homeassistant.toggle` is a meaningful action, not just a read-only sensor. */
 private val TOGGLEABLE_DOMAINS = setOf("light", "switch", "fan", "automation", "input_boolean", "siren")
 
-/** Domains simple enough to render as a compact half-width tile instead of a full-width card. */
-private val TILE_DOMAINS = TOGGLEABLE_DOMAINS + setOf("binary_sensor", "sensor")
+/**
+ * Domains rendered as compact half-width tiles. Light and switch get full-width EntityCards
+ * so they can show inline controls (brightness slider, power reading) and navigate to detail.
+ */
+private val TILE_DOMAINS = setOf("fan", "automation", "input_boolean", "siren", "binary_sensor", "sensor")
 
 private val ACTIVE_STATES = setOf(
     "on", "playing", "heat", "cool", "heat_cool", "dry", "fan_only", "auto", "cleaning", "home", "triggered",
@@ -110,7 +114,7 @@ fun DashboardScreen(
     favoriteEntityIds: Set<String>,
     onEditEntities: () -> Unit,
     onLogout: () -> Unit,
-    onOpenClimateDetail: (String) -> Unit,
+    onOpenDetail: (entityId: String) -> Unit,
 ) {
     val entities by session.repository.entities.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -243,10 +247,11 @@ fun DashboardScreen(
                                     EntityCard(
                                         entity = entity,
                                         onCallService = ::callService,
-                                        onOpenDetail = if (entity.domain == "climate" || entity.domain == "water_heater") {
-                                            { onOpenClimateDetail(entity.entityId) }
-                                        } else {
-                                            null
+                                        onOpenDetail = when (entity.domain) {
+                                            "climate", "water_heater", "light", "switch" -> {
+                                                { onOpenDetail(entity.entityId) }
+                                            }
+                                            else -> null
                                         },
                                     )
                                 }
@@ -384,6 +389,15 @@ private fun EntityCard(
                 ) {
                     Text(text = entity.friendlyName, style = MaterialTheme.typography.titleSmall)
                     Text(text = entity.state.toDisplayLabel(), style = MaterialTheme.typography.bodyMedium)
+                    if (entity.domain == "switch") {
+                        entity.currentPowerW?.let { power ->
+                            Text(
+                                text = "%.1f W".format(power),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
                 if (isToggleable) {
                     Switch(

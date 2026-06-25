@@ -34,8 +34,10 @@ import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.screens.EntityPickerScreen
+import dev.domus.android.ui.screens.LightDetailScreen
 import dev.domus.android.ui.screens.OAuthLoginScreen
 import dev.domus.android.ui.screens.OnboardingScreen
+import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaConnectionConfig
@@ -65,6 +67,9 @@ object Routes {
     const val DASHBOARD = "dashboard"
     const val PICKER = "picker"
     const val CLIMATE_DETAIL = "climate_detail"
+    const val LIGHT_DETAIL = "light_detail"
+    const val SWITCH_DETAIL = "switch_detail"
+    const val ENTITY_DETAIL_ARG = "entityId"
     const val CLIMATE_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
@@ -188,30 +193,58 @@ private fun DomusNavHost() {
                             popUpTo(Routes.DASHBOARD) { inclusive = true }
                         }
                     },
-                    onOpenClimateDetail = { entityId ->
-                        navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
+                    onOpenDetail = { entityId ->
+                        val domain = session.repository.entities.value[entityId]?.domain
+                        when (domain) {
+                            "climate", "water_heater" -> navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
+                            "light" -> navController.navigate("${Routes.LIGHT_DETAIL}/$entityId")
+                            "switch" -> navController.navigate("${Routes.SWITCH_DETAIL}/$entityId")
+                            else -> {}
+                        }
                     },
                 )
             }
         }
         composable(
-            route = "${Routes.CLIMATE_DETAIL}/{${Routes.CLIMATE_DETAIL_ARG}}",
-            arguments = listOf(navArgument(Routes.CLIMATE_DETAIL_ARG) { type = NavType.StringType }),
+            route = "${Routes.CLIMATE_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
-            val entityId = backStackEntry.arguments?.getString(Routes.CLIMATE_DETAIL_ARG)
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
             val session = HaSessionHolder.session
             if (session == null || entityId == null) {
                 LaunchedEffect(Unit) {
-                    navController.navigate(Routes.CONNECT) {
-                        popUpTo(Routes.CLIMATE_DETAIL) { inclusive = true }
-                    }
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.CLIMATE_DETAIL) { inclusive = true } }
                 }
             } else {
-                ClimateDetailScreen(
-                    session = session,
-                    entityId = entityId,
-                    onBack = { navController.popBackStack() },
-                )
+                ClimateDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+            }
+        }
+        composable(
+            route = "${Routes.LIGHT_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.LIGHT_DETAIL) { inclusive = true } }
+                }
+            } else {
+                LightDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+            }
+        }
+        composable(
+            route = "${Routes.SWITCH_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.SWITCH_DETAIL) { inclusive = true } }
+                }
+            } else {
+                SwitchDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {

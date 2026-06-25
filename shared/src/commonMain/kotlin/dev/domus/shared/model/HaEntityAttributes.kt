@@ -97,3 +97,45 @@ val HaEntityState.maxTemp: Double
 
 val HaEntityState.targetTempStep: Double
     get() = (attribute("target_temp_step") as? JsonPrimitive)?.doubleOrNull ?: 0.5
+
+// Light color and color temperature
+val HaEntityState.colorMode: String?
+    get() = (attribute("color_mode") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.supportedColorModes: List<String>
+    get() = stringList("supported_color_modes")
+
+val HaEntityState.colorTempKelvin: Int?
+    get() = (attribute("color_temp_kelvin") as? JsonPrimitive)?.intOrNull
+
+val HaEntityState.minColorTempKelvin: Int?
+    get() = (attribute("min_color_temp_kelvin") as? JsonPrimitive)?.intOrNull
+
+val HaEntityState.maxColorTempKelvin: Int?
+    get() = (attribute("max_color_temp_kelvin") as? JsonPrimitive)?.intOrNull
+
+/** HS color as (hue 0–360, saturation 0–100); null if light doesn't report hs_color. */
+val HaEntityState.hueColor: Pair<Float, Float>?
+    get() {
+        val arr = attribute("hs_color") as? JsonArray ?: return null
+        val h = (arr.getOrNull(0) as? JsonPrimitive)?.doubleOrNull?.toFloat() ?: return null
+        val s = (arr.getOrNull(1) as? JsonPrimitive)?.doubleOrNull?.toFloat() ?: return null
+        return h to s
+    }
+
+// Power monitoring (smart plug / switch entities with energy metering)
+val HaEntityState.currentPowerW: Double?
+    get() = (attribute("current_power_w") as? JsonPrimitive)?.doubleOrNull
+        ?: (attribute("power") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.voltageV: Double?
+    get() = (attribute("voltage") as? JsonPrimitive)?.doubleOrNull
+
+/** Current in milli-Amperes (some integrations report Amps directly in "current"). */
+val HaEntityState.currentMa: Double?
+    get() = (attribute("current_ma") as? JsonPrimitive)?.doubleOrNull
+        ?: (attribute("current") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.todayEnergyKwh: Double?
+    get() = (attribute("today_energy_kwh") as? JsonPrimitive)?.doubleOrNull
+        ?: (attribute("energy") as? JsonPrimitive)?.doubleOrNull
