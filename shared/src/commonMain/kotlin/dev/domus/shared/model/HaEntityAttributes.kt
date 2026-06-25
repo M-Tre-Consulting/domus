@@ -50,9 +50,6 @@ val HaEntityState.minValue: Double?
 val HaEntityState.maxValue: Double?
     get() = (attribute("max") as? JsonPrimitive)?.doubleOrNull
 
-val HaEntityState.step: Double
-    get() = (attribute("step") as? JsonPrimitive)?.doubleOrNull ?: 1.0
-
 /** Options list for `select`/`input_select` entities. */
 val HaEntityState.options: List<String>
     get() = (attribute("options") as? JsonArray)
@@ -68,10 +65,6 @@ private fun HaEntityState.stringList(attributeName: String): List<String> =
 val HaEntityState.hvacMode: String get() = state
 
 val HaEntityState.hvacModes: List<String> get() = stringList("hvac_modes")
-
-/** Informational only (idle/heating/cooling/drying...); not settable. */
-val HaEntityState.hvacAction: String?
-    get() = (attribute("hvac_action") as? JsonPrimitive)?.contentOrNull
 
 val HaEntityState.fanMode: String?
     get() = (attribute("fan_mode") as? JsonPrimitive)?.contentOrNull

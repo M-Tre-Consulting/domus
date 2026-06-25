@@ -70,7 +70,6 @@ object Routes {
     const val LIGHT_DETAIL = "light_detail"
     const val SWITCH_DETAIL = "switch_detail"
     const val ENTITY_DETAIL_ARG = "entityId"
-    const val CLIMATE_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
 }
