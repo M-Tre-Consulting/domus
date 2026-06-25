@@ -139,3 +139,9 @@ val HaEntityState.currentMa: Double?
 val HaEntityState.todayEnergyKwh: Double?
     get() = (attribute("today_energy_kwh") as? JsonPrimitive)?.doubleOrNull
         ?: (attribute("energy") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.deviceClass: String?
+    get() = (attribute("device_class") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.unitOfMeasurement: String?
+    get() = (attribute("unit_of_measurement") as? JsonPrimitive)?.contentOrNull

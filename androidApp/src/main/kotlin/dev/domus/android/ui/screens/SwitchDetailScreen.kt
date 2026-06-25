@@ -8,19 +8,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -37,10 +38,14 @@ import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaServiceCall
 import dev.domus.shared.model.currentMa
 import dev.domus.shared.model.currentPowerW
+import dev.domus.shared.model.deviceClass
 import dev.domus.shared.model.friendlyName
 import dev.domus.shared.model.todayEnergyKwh
+import dev.domus.shared.model.unitOfMeasurement
 import dev.domus.shared.model.voltageV
 import kotlinx.coroutines.launch
+
+private val POWER_DEVICE_CLASSES = setOf("power", "voltage", "current", "energy", "apparent_power")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,6 +93,55 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
 
         val isOn = entity.state.equals("on", ignoreCase = true)
 
+        // Collect power monitoring data. Try direct attributes on the switch entity first
+        // (integrations like TP-Link Kasa embed power data there). If none are found, look for
+        // sibling sensor entities whose entity ID shares the same name prefix and whose
+        // device_class is a power-monitoring class — this covers integrations like Shelly or
+        // Tasmota that expose separate sensor entities per measurement.
+        val powerRows = buildList {
+            entity.currentPowerW?.let { add("Power" to "%.1f W".format(it)) }
+            entity.voltageV?.let { add("Voltage" to "%.1f V".format(it)) }
+            entity.currentMa?.let {
+                if (it > 1000) add("Current" to "%.2f A".format(it / 1000.0))
+                else add("Current" to "%.0f mA".format(it))
+            }
+            entity.todayEnergyKwh?.let { add("Today's energy" to "%.3f kWh".format(it)) }
+
+            if (isEmpty()) {
+                val switchName = entityId.substringAfter('.')
+                entities.values
+                    .filter { e ->
+                        e.domain == "sensor" &&
+                        e.entityId.substringAfter('.').startsWith(switchName) &&
+                        e.deviceClass in POWER_DEVICE_CLASSES
+                    }
+                    .sortedBy { e ->
+                        when (e.deviceClass) {
+                            "power" -> 0
+                            "voltage" -> 1
+                            "current" -> 2
+                            "energy" -> 3
+                            else -> 4
+                        }
+                    }
+                    .forEach { sensor ->
+                        val label = when (sensor.deviceClass) {
+                            "power" -> "Power"
+                            "voltage" -> "Voltage"
+                            "current" -> "Current"
+                            "energy" -> "Energy"
+                            "apparent_power" -> "Apparent power"
+                            else -> sensor.friendlyName
+                        }
+                        val value = buildString {
+                            append(sensor.state)
+                            sensor.unitOfMeasurement?.let { append(" $it") }
+                        }
+                        add(label to value)
+                    }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -98,20 +152,25 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
         ) {
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
 
-            FilledIconToggleButton(
-                checked = isOn,
-                onCheckedChange = { on ->
+            // Tapping the hero badge toggles the switch.
+            Surface(
+                onClick = {
                     callService(
-                        HaServiceCall("switch", if (on) "turn_on" else "turn_off", entity.entityId),
+                        HaServiceCall("switch", if (isOn) "turn_off" else "turn_on", entity.entityId),
                     )
                 },
+                shape = CircleShape,
+                color = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(96.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Filled.PowerSettingsNew,
-                    contentDescription = "Power",
-                    modifier = Modifier.size(48.dp),
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.PowerSettingsNew,
+                        contentDescription = if (isOn) "Turn off" else "Turn on",
+                        tint = if (isOn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
             }
 
             Text(
@@ -119,17 +178,6 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
             )
-
-            // Energy monitoring card — only shown when the integration reports power attributes
-            val powerRows = buildList {
-                entity.currentPowerW?.let { add("Power" to "%.1f W".format(it)) }
-                entity.voltageV?.let { add("Voltage" to "%.1f V".format(it)) }
-                entity.currentMa?.let {
-                    if (it > 1000) add("Current" to "%.2f A".format(it / 1000.0))
-                    else add("Current" to "%.0f mA".format(it))
-                }
-                entity.todayEnergyKwh?.let { add("Today's energy" to "%.3f kWh".format(it)) }
-            }
 
             if (powerRows.isNotEmpty()) {
                 Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))

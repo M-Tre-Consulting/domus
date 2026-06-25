@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +54,7 @@ import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaEntityState
 import dev.domus.shared.model.HaServiceCall
 import dev.domus.shared.model.brightnessPercent
+import dev.domus.shared.model.colorMode
 import dev.domus.shared.model.colorTempKelvin
 import dev.domus.shared.model.friendlyName
 import dev.domus.shared.model.hueColor
@@ -73,16 +73,16 @@ private val COLOR_MODES_WITH_COLOR = setOf("hs", "rgb", "rgbw", "rgbww", "xy")
 private data class LightColorPreset(val label: String, val color: Color, val hue: Float, val saturation: Float)
 
 private val LIGHT_COLOR_PRESETS = listOf(
-    LightColorPreset("White",       Color(0xFFFFFFFF), 0f,   0f),
-    LightColorPreset("Warm white",  Color(0xFFFFD080), 36f,  50f),
-    LightColorPreset("Red",         Color(0xFFFF3333), 0f,   100f),
-    LightColorPreset("Orange",      Color(0xFFFF8800), 30f,  100f),
-    LightColorPreset("Yellow",      Color(0xFFFFEE00), 58f,  100f),
-    LightColorPreset("Green",       Color(0xFF22CC55), 135f, 100f),
-    LightColorPreset("Cyan",        Color(0xFF00CCFF), 195f, 100f),
-    LightColorPreset("Blue",        Color(0xFF3366FF), 228f, 100f),
-    LightColorPreset("Violet",      Color(0xFF9933FF), 270f, 100f),
-    LightColorPreset("Pink",        Color(0xFFFF33AA), 320f, 100f),
+    LightColorPreset("White",      Color(0xFFFFFFFF), 0f,   0f),
+    LightColorPreset("Warm white", Color(0xFFFFD080), 36f,  50f),
+    LightColorPreset("Red",        Color(0xFFFF3333), 0f,   100f),
+    LightColorPreset("Orange",     Color(0xFFFF8800), 30f,  100f),
+    LightColorPreset("Yellow",     Color(0xFFFFEE00), 58f,  100f),
+    LightColorPreset("Green",      Color(0xFF22CC55), 135f, 100f),
+    LightColorPreset("Cyan",       Color(0xFF00CCFF), 195f, 100f),
+    LightColorPreset("Blue",       Color(0xFF3366FF), 228f, 100f),
+    LightColorPreset("Violet",     Color(0xFF9933FF), 270f, 100f),
+    LightColorPreset("Pink",       Color(0xFFFF33AA), 320f, 100f),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,21 +118,6 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    if (entity != null) {
-                        FilledIconToggleButton(
-                            checked = entity.state.equals("on", ignoreCase = true),
-                            onCheckedChange = { on ->
-                                callService(
-                                    HaServiceCall("light", if (on) "turn_on" else "turn_off", entity.entityId),
-                                )
-                            },
-                            modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp),
-                        ) {
-                            Icon(Icons.Filled.Lightbulb, contentDescription = "Power")
-                        }
-                    }
-                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -145,7 +130,8 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
         }
 
         val isOn = entity.state.equals("on", ignoreCase = true)
-        val colorModes = entity.supportedColorModes
+        // Fall back to current color_mode if supported_color_modes isn't populated.
+        val colorModes = entity.supportedColorModes.ifEmpty { listOfNotNull(entity.colorMode) }
         val hasBrightness = colorModes.any { it in COLOR_MODES_WITH_BRIGHTNESS }
         val hasColorTemp = colorModes.any { it in COLOR_MODES_WITH_TEMP }
         val hasColor = colorModes.any { it in COLOR_MODES_WITH_COLOR }
@@ -160,16 +146,22 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
         ) {
             Spacer(Modifier.height(DesignTokens.Spacing.lg.dp))
 
+            // Tapping the hero badge toggles the light — no separate TopAppBar button needed.
             Surface(
+                onClick = {
+                    callService(
+                        HaServiceCall("light", if (isOn) "turn_off" else "turn_on", entity.entityId),
+                    )
+                },
                 shape = CircleShape,
-                color = if (isOn) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                color = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(96.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.Lightbulb,
-                        contentDescription = null,
-                        tint = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = if (isOn) "Turn off" else "Turn on",
+                        tint = if (isOn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(48.dp),
                     )
                 }
@@ -268,7 +260,6 @@ private fun LightColorTempSection(entity: HaEntityState, onCallService: (HaServi
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        // Warm → cool gradient strip under the slider as a visual reference
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -305,23 +296,74 @@ private fun LightColorTempSection(entity: HaEntityState, onCallService: (HaServi
 
 @Composable
 private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
-    val currentHue = entity.hueColor
+    val currentHs = entity.hueColor
+    var hueSlider by remember(entity.entityId, currentHs?.first) {
+        mutableFloatStateOf(currentHs?.first ?: 0f)
+    }
+    // Rainbow gradient colors, computed once.
+    val hueGradientColors = remember { (0..12).map { i -> Color.hsv(i * 30f, 1f, 1f) } }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Color", style = MaterialTheme.typography.labelLarge)
+            // Small live preview of the selected hue
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(Color.hsv(hueSlider, 1f, 1f)),
+            )
+        }
+
+        // Rainbow gradient strip as a visual cue for the hue slider below
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(Brush.horizontalGradient(hueGradientColors)),
+        )
+        Slider(
+            value = hueSlider,
+            onValueChange = { hueSlider = it },
+            onValueChangeFinished = {
+                onCallService(
+                    HaServiceCall(
+                        domain = "light",
+                        service = "turn_on",
+                        entityId = entity.entityId,
+                        data = mapOf(
+                            "hs_color" to JsonArray(
+                                listOf(JsonPrimitive(hueSlider), JsonPrimitive(100f)),
+                            ),
+                        ),
+                    ),
+                )
+            },
+            valueRange = 0f..360f,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // Quick-access preset swatches
         Text(
-            text = "Color",
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(bottom = DesignTokens.Spacing.sm.dp),
+            text = "Presets",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = DesignTokens.Spacing.xs.dp),
         )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp)) {
             items(LIGHT_COLOR_PRESETS) { preset ->
-                val isSelected = currentHue != null && (
-                    preset.saturation < 5f && (currentHue.second < 5f) ||
-                    (abs(currentHue.first - preset.hue) < 15f && abs(currentHue.second - preset.saturation) < 20f)
+                val isSelected = currentHs != null && (
+                    (preset.saturation < 5f && currentHs.second < 5f) ||
+                    (abs(currentHs.first - preset.hue) < 15f && abs(currentHs.second - preset.saturation) < 20f)
                 )
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(preset.color)
                         .then(
@@ -332,6 +374,7 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
                             },
                         )
                         .clickable {
+                            hueSlider = preset.hue
                             onCallService(
                                 HaServiceCall(
                                     domain = "light",
