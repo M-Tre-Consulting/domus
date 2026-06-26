@@ -1,6 +1,7 @@
 package dev.domus.android.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +12,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,6 +34,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -42,15 +49,35 @@ private val ACTIVE_STATES = setOf(
 
 private data class ChartPoint(val timeMs: Long, val value: Double?, val state: String)
 
+private val TIME_RANGES = listOf(
+    24   to "24 h",
+    48   to "48 h",
+    168  to "7 days",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StateHistorySection(
     session: HaSession,
     entityId: String,
+    entityName: String = entityId,
     modifier: Modifier = Modifier,
 ) {
+    // Inline 24-hour fetch
     var points by remember(entityId) { mutableStateOf<List<HaHistoryPoint>?>(null) }
     LaunchedEffect(entityId) {
         points = session.restApi.getHistory(entityId)
+    }
+
+    // Bottom sheet state
+    var showSheet by remember { mutableStateOf(false) }
+    var sheetHours by remember { mutableIntStateOf(24) }
+    var sheetPoints by remember { mutableStateOf<List<HaHistoryPoint>?>(null) }
+
+    LaunchedEffect(showSheet, sheetHours, entityId) {
+        if (!showSheet) { sheetPoints = null; return@LaunchedEffect }
+        sheetPoints = null
+        sheetPoints = session.restApi.getHistory(entityId, sheetHours)
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -78,12 +105,86 @@ fun StateHistorySection(
             else -> {
                 val windowEndMs = remember { kotlin.time.Clock.System.now().toEpochMilliseconds() }
                 val windowStartMs = windowEndMs - 24 * 3_600_000L
-                StateHistoryChart(
-                    points = points!!,
-                    windowStartMs = windowStartMs,
-                    windowEndMs = windowEndMs,
-                    modifier = Modifier.fillMaxWidth(),
+                Box(
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable { showSheet = true },
+                ) {
+                    StateHistoryChart(
+                        points = points!!,
+                        windowStartMs = windowStartMs,
+                        windowEndMs = windowEndMs,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Text(
+                    text = "Tap to expand",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.align(Alignment.End).padding(top = 2.dp),
                 )
+            }
+        }
+    }
+
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = DesignTokens.Spacing.lg.dp)
+                    .padding(bottom = DesignTokens.Spacing.xl.dp),
+            ) {
+                Text(
+                    text = entityName,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = DesignTokens.Spacing.md.dp),
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
+                ) {
+                    TIME_RANGES.forEach { (h, label) ->
+                        FilterChip(
+                            selected = sheetHours == h,
+                            onClick = { sheetHours = h },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(DesignTokens.Spacing.md.dp))
+
+                when {
+                    sheetPoints == null -> Box(
+                        Modifier.fillMaxWidth().height(160.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+
+                    sheetPoints!!.isEmpty() -> Text(
+                        text = "No history available for this period",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    else -> {
+                        val sheetEndMs = remember(sheetHours) {
+                            kotlin.time.Clock.System.now().toEpochMilliseconds()
+                        }
+                        val sheetStartMs = sheetEndMs - sheetHours * 3_600_000L
+                        StateHistoryChart(
+                            points = sheetPoints!!,
+                            windowStartMs = sheetStartMs,
+                            windowEndMs = sheetEndMs,
+                            largeMode = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
         }
     }
@@ -94,6 +195,7 @@ private fun StateHistoryChart(
     points: List<HaHistoryPoint>,
     windowStartMs: Long,
     windowEndMs: Long,
+    largeMode: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val chartPoints = remember(points) {
@@ -113,6 +215,9 @@ private fun StateHistoryChart(
 
     val windowDurationMs = (windowEndMs - windowStartMs).toFloat()
 
+    val timelineHeight: Dp = if (largeMode) 120.dp else 56.dp
+    val lineChartHeight: Dp = if (largeMode) 200.dp else 100.dp
+
     if (isNumeric) {
         val numericPoints = chartPoints.filter { it.value != null }
         val minVal = numericPoints.minOf { it.value!! }
@@ -121,14 +226,13 @@ private fun StateHistoryChart(
 
         Canvas(
             modifier = modifier
-                .height(100.dp)
+                .height(lineChartHeight)
                 .clip(shape),
         ) {
             drawRect(surfaceVariantColor.copy(alpha = 0.3f))
 
             val linePath = Path()
             val fillPath = Path()
-            var prevX = 0f
             var prevY = size.height / 2f
 
             numericPoints.forEachIndexed { i, pt ->
@@ -147,7 +251,6 @@ private fun StateHistoryChart(
                     fillPath.lineTo(x, prevY)
                     fillPath.lineTo(x, y)
                 }
-                prevX = x
                 prevY = y
             }
             linePath.lineTo(size.width, prevY)
@@ -163,7 +266,6 @@ private fun StateHistoryChart(
             )
         }
 
-        // Y-axis range label
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -172,10 +274,9 @@ private fun StateHistoryChart(
             Text("%.1f".format(maxVal), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
         }
     } else {
-        // State timeline
         Canvas(
             modifier = modifier
-                .height(56.dp)
+                .height(timelineHeight)
                 .clip(shape),
         ) {
             drawRect(surfaceVariantColor.copy(alpha = 0.5f))
@@ -197,11 +298,9 @@ private fun StateHistoryChart(
                 }
             }
 
-            // Tick marks at 25%, 50%, 75%
-            val tickColor = surfaceVariantColor.copy(alpha = 0.6f)
             listOf(0.25f, 0.5f, 0.75f).forEach { frac ->
                 drawLine(
-                    color = tickColor,
+                    color = surfaceVariantColor.copy(alpha = 0.6f),
                     start = Offset(frac * size.width, 0f),
                     end = Offset(frac * size.width, size.height),
                     strokeWidth = 1.dp.toPx(),
@@ -210,14 +309,16 @@ private fun StateHistoryChart(
         }
     }
 
-    // Time axis labels
-    val labelStartHour = Instant.fromEpochMilliseconds(windowStartMs).toString().substring(11, 16)
-    val labelEndHour = Instant.fromEpochMilliseconds(windowEndMs).toString().substring(11, 16)
+    // Time axis labels — show date prefix in large (multi-day) mode
+    val formatLabel = { ms: Long ->
+        val str = Instant.fromEpochMilliseconds(ms).toString()
+        if (largeMode) str.substring(5, 16).replace('T', ' ') else str.substring(11, 16)
+    }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(labelStartHour, style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
-        Text(labelEndHour, style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
+        Text(formatLabel(windowStartMs), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
+        Text(formatLabel(windowEndMs), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
     }
 }

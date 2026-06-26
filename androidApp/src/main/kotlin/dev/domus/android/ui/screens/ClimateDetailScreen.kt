@@ -241,7 +241,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
             InfoCard(rows = infoRows)
 
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
-            StateHistorySection(session = session, entityId = entityId)
+            StateHistorySection(session = session, entityId = entityId, entityName = entity.friendlyName)
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg.dp))
         }
     }

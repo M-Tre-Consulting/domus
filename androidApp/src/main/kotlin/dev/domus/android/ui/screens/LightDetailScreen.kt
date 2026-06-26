@@ -232,7 +232,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
-            StateHistorySection(session = session, entityId = entityId)
+            StateHistorySection(session = session, entityId = entityId, entityName = entity.friendlyName)
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
         }
     }

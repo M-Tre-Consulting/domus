@@ -42,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,7 +85,10 @@ import dev.domus.shared.model.currentPowerW
 import dev.domus.shared.model.numericValue
 import dev.domus.shared.model.options
 import dev.domus.shared.model.percentage
+import dev.domus.shared.model.maxTemp
+import dev.domus.shared.model.minTemp
 import dev.domus.shared.model.targetTemperature
+import dev.domus.shared.model.targetTempStep
 import dev.domus.shared.model.temperatureUnit
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -647,44 +651,54 @@ private fun BrightnessSlider(entity: HaEntityState, onCallService: (HaServiceCal
 private fun TemperatureControls(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
     val target = entity.targetTemperature ?: return
     val current = entity.currentTemperature
+    val step = entity.targetTempStep
+    val min = entity.minTemp
+    val max = entity.maxTemp
 
-    Row(
+    fun setTemp(newTarget: Double) {
+        onCallService(
+            HaServiceCall(
+                domain = entity.domain,
+                service = "set_temperature",
+                entityId = entity.entityId,
+                data = mapOf("temperature" to JsonPrimitive(newTarget.coerceIn(min, max))),
+            ),
+        )
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = DesignTokens.Spacing.sm.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (current != null) {
             Text(
-                text = "Current: $current${entity.temperatureUnit}",
+                text = "Currently ${"%.1f".format(current)}${entity.temperatureUnit}",
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        IconButton(onClick = {
-            onCallService(
-                HaServiceCall(
-                    domain = entity.domain,
-                    service = "set_temperature",
-                    entityId = entity.entityId,
-                    data = mapOf("temperature" to JsonPrimitive(target - 0.5)),
-                ),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
+        ) {
+            FilledTonalIconButton(
+                onClick = { setTemp(target - step) },
+                enabled = target > min,
+            ) {
+                Icon(Icons.Filled.Remove, contentDescription = "Decrease temperature")
+            }
+            Text(
+                text = "%.1f${entity.temperatureUnit}".format(target),
+                style = MaterialTheme.typography.titleMedium,
             )
-        }) {
-            Icon(imageVector = Icons.Filled.Remove, contentDescription = "Decrease target temperature")
-        }
-        Text(text = "$target${entity.temperatureUnit}", style = MaterialTheme.typography.bodyMedium)
-        IconButton(onClick = {
-            onCallService(
-                HaServiceCall(
-                    domain = entity.domain,
-                    service = "set_temperature",
-                    entityId = entity.entityId,
-                    data = mapOf("temperature" to JsonPrimitive(target + 0.5)),
-                ),
-            )
-        }) {
-            Icon(imageVector = Icons.Filled.Add, contentDescription = "Increase target temperature")
+            FilledTonalIconButton(
+                onClick = { setTemp(target + step) },
+                enabled = target < max,
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Increase temperature")
+            }
         }
     }
 }

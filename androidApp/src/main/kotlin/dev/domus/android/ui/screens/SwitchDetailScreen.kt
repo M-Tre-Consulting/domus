@@ -211,7 +211,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
-            StateHistorySection(session = session, entityId = entityId, modifier = Modifier.align(Alignment.Start))
+            StateHistorySection(session = session, entityId = entityId, entityName = entity.friendlyName, modifier = Modifier.align(Alignment.Start))
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
         }
     }
