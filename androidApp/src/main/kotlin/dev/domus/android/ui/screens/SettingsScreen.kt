@@ -35,6 +35,8 @@ fun SettingsScreen(
 ) {
     val showDebugDiag by settingsStore.showDebugDiag.collectAsState(initial = true)
     val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
+    val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
+    val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -67,6 +69,20 @@ fun SettingsScreen(
                 subtitle = "Vibrate when interacting with switches and sliders.",
                 checked = useHapticFeedback,
                 onCheckedChange = { scope.launch { settingsStore.setUseHapticFeedback(it) } },
+            )
+
+            SettingsToggle(
+                title = "Group by Room",
+                subtitle = "Organise entities by area instead of device type.",
+                checked = groupByRoom,
+                onCheckedChange = { scope.launch { settingsStore.setGroupByRoom(it) } },
+            )
+
+            SettingsToggle(
+                title = "Keep Screen On",
+                subtitle = "Prevent the screen from sleeping while the dashboard is open.",
+                checked = keepScreenOn,
+                onCheckedChange = { scope.launch { settingsStore.setKeepScreenOn(it) } },
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.md.dp))

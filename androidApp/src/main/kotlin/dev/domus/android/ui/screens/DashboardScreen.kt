@@ -30,7 +30,11 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -85,9 +89,17 @@ import dev.domus.shared.model.temperatureUnit
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
 import dev.domus.android.ui.LocalAnimatedVisibilityScope
 import dev.domus.android.ui.LocalSharedTransitionScope
 import dev.domus.android.data.SettingsStore
+import dev.domus.shared.data.WebSocketState
 import dev.domus.shared.model.hueColor
 
 /** Domains where `homeassistant.toggle` is a meaningful action, not just a read-only sensor. */
@@ -134,11 +146,23 @@ fun DashboardScreen(
     val entities by session.repository.entities.collectAsState()
     val areaEntityMap by session.repository.areaEntityMap.collectAsState()
     val registryDiag by session.repository.registryDiag.collectAsState()
+    val wsState by session.repository.wsState.collectAsState()
     val showDebugDiag by settingsStore.showDebugDiag.collectAsState(initial = true)
+    val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
+    val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val view = LocalView.current
+
+    DisposableEffect(keepScreenOn) {
+        view.keepScreenOn = keepScreenOn
+        onDispose { view.keepScreenOn = false }
+    }
 
     // Refresh + realtime updates are started once at connect time (HaSessionHolder.connect),
     // not here — a screen's LaunchedEffect gets cancelled as soon as you navigate away from
@@ -167,16 +191,21 @@ fun DashboardScreen(
         }
     }
 
+    val useRoomGrouping = groupByRoom && areaEntityMap.isNotEmpty()
     val groupedEntities = entities.values
         .filter { it.entityId in favoriteEntityIds }
+        .filter { entity ->
+            searchQuery.isBlank() ||
+            entity.friendlyName.contains(searchQuery, ignoreCase = true) ||
+            entity.entityId.contains(searchQuery, ignoreCase = true)
+        }
         .sortedBy { it.friendlyName }
         .groupBy { entity ->
-            if (areaEntityMap.isNotEmpty()) areaEntityMap[entity.entityId] ?: "Other"
+            if (useRoomGrouping) areaEntityMap[entity.entityId] ?: "Other"
             else domainLabel(entity.domain)
         }
         .let { groups ->
-            if (areaEntityMap.isNotEmpty()) {
-                // "Other" (entities not assigned to any area) always sorts last
+            if (useRoomGrouping) {
                 groups.toSortedMap { a, b ->
                     when {
                         a == "Other" -> 1
@@ -190,6 +219,7 @@ fun DashboardScreen(
         }
 
     fun callService(call: HaServiceCall) {
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         scope.launch {
             try {
                 session.repository.callService(call)
@@ -201,38 +231,70 @@ fun DashboardScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Domus")
-                        if (showDebugDiag) {
-                            Text(
-                                text = registryDiag,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+            if (isSearchActive) {
+                TopAppBar(
+                    title = {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Search entities…") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { isSearchActive = false; searchQuery = "" }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Close search")
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onEditEntities) {
-                        Icon(imageVector = Icons.Filled.Edit, contentDescription = "Choose entities")
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(imageVector = Icons.Filled.Settings, contentDescription = "Settings")
-                    }
-                    IconButton(onClick = onLogout) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = "Disconnect")
-                    }
-                },
-            )
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text("Domus")
+                            if (showDebugDiag) {
+                                Text(
+                                    text = registryDiag,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(imageVector = Icons.Filled.Search, contentDescription = "Search")
+                        }
+                        IconButton(onClick = onEditEntities) {
+                            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Choose entities")
+                        }
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(imageVector = Icons.Filled.Settings, contentDescription = "Settings")
+                        }
+                        IconButton(onClick = onLogout) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = "Disconnect")
+                        }
+                    },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        AnimatedVisibility(visible = wsState != WebSocketState.Connected) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = ::refresh,
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().weight(1f),
         ) {
             val uiState = when {
                 errorMessage != null -> "error"
@@ -309,6 +371,7 @@ fun DashboardScreen(
                 }
             }
         }
+        } // Column
     }
 }
 

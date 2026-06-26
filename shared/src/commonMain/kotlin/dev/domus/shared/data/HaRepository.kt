@@ -15,6 +15,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 
+enum class WebSocketState { Connecting, Connected, Reconnecting }
+
 /**
  * Single source of truth for Home Assistant entity state: seeds from the REST snapshot,
  * then keeps it fresh from the WebSocket `state_changed` event stream.
@@ -34,6 +36,9 @@ class HaRepository(
     /** Short diagnostic string from the last registry fetch; for temporary in-app display. */
     val registryDiag: StateFlow<String> = webSocketClient.registryDiag
 
+    private val _wsState = MutableStateFlow(WebSocketState.Connecting)
+    val wsState: StateFlow<WebSocketState> = _wsState.asStateFlow()
+
     suspend fun refresh() {
         val states = restApi.getStates()
         _entities.value = states.associateBy { it.entityId }
@@ -45,17 +50,18 @@ class HaRepository(
 
     fun startRealtimeUpdates(scope: CoroutineScope) {
         scope.launch {
+            var isFirstConnect = true
             while (true) {
+                _wsState.value = if (isFirstConnect) WebSocketState.Connecting else WebSocketState.Reconnecting
+                isFirstConnect = false
                 try {
-                    webSocketClient.connectAndListen()
+                    webSocketClient.connectAndListen(onConnected = { _wsState.value = WebSocketState.Connected })
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     println("Domus: WebSocket dropped (${e::class.simpleName}: ${e.message}), reconnecting in 5 s")
                 }
-                // Whether the connection closed cleanly or with an error, wait then
-                // refresh the REST snapshot (to catch any state changes missed while
-                // the socket was down) and then connectAndListen() reconnects.
+                _wsState.value = WebSocketState.Reconnecting
                 delay(5_000)
                 try { refresh() } catch (_: Exception) {}
             }

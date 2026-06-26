@@ -56,7 +56,7 @@ class HaWebSocketClient(
     /** Short diagnostic string from the last registry fetch; shown in the dashboard title bar. */
     val registryDiag: StateFlow<String> = _registryDiag.asStateFlow()
 
-    suspend fun connectAndListen() {
+    suspend fun connectAndListen(onConnected: () -> Unit = {}) {
         client.webSocket(websocketUrl) {
             var messageId = 1
 
@@ -75,6 +75,8 @@ class HaWebSocketClient(
                 close()
                 error("Home Assistant authentication failed")
             }
+
+            onConnected()
 
             // --- Registry fetches (one-shot, before the subscription loop) ---
             // Uses ID-based response matching: any interleaved messages that arrive before

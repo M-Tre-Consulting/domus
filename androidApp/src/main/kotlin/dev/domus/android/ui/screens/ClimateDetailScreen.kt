@@ -43,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,8 +84,10 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val haptic = LocalHapticFeedback.current
 
     fun callService(call: HaServiceCall) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             try {
                 session.repository.callService(call)

@@ -43,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -94,8 +96,10 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val haptic = LocalHapticFeedback.current
 
     fun callService(call: HaServiceCall) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             try {
                 session.repository.callService(call)
@@ -328,8 +332,23 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
     var hueSlider by remember(entity.entityId, currentHs?.first) {
         mutableFloatStateOf(currentHs?.first ?: 0f)
     }
-    // Rainbow gradient colors, computed once.
+    var satSlider by remember(entity.entityId, currentHs?.second) {
+        mutableFloatStateOf(currentHs?.second ?: 100f)
+    }
     val hueGradientColors = remember { (0..12).map { i -> Color.hsv(i * 30f, 1f, 1f) } }
+
+    fun sendHsColor() {
+        onCallService(
+            HaServiceCall(
+                domain = "light",
+                service = "turn_on",
+                entityId = entity.entityId,
+                data = mapOf(
+                    "hs_color" to JsonArray(listOf(JsonPrimitive(hueSlider), JsonPrimitive(satSlider))),
+                ),
+            ),
+        )
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -338,16 +357,14 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Color", style = MaterialTheme.typography.labelLarge)
-            // Small live preview of the selected hue
             Box(
                 modifier = Modifier
                     .size(20.dp)
                     .clip(CircleShape)
-                    .background(Color.hsv(hueSlider, 1f, 1f)),
+                    .background(Color.hsv(hueSlider, (satSlider / 100f).coerceIn(0f, 1f), 1f)),
             )
         }
 
-        // Rainbow gradient strip as a visual cue for the hue slider below
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -358,25 +375,42 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
         Slider(
             value = hueSlider,
             onValueChange = { hueSlider = it },
-            onValueChangeFinished = {
-                onCallService(
-                    HaServiceCall(
-                        domain = "light",
-                        service = "turn_on",
-                        entityId = entity.entityId,
-                        data = mapOf(
-                            "hs_color" to JsonArray(
-                                listOf(JsonPrimitive(hueSlider), JsonPrimitive(100f)),
-                            ),
-                        ),
-                    ),
-                )
-            },
+            onValueChangeFinished = { sendHsColor() },
             valueRange = 0f..360f,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // Quick-access preset swatches
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Saturation", style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = "${satSlider.toInt()}%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color.White, Color.hsv(hueSlider, 1f, 1f)),
+                    ),
+                ),
+        )
+        Slider(
+            value = satSlider,
+            onValueChange = { satSlider = it },
+            onValueChangeFinished = { sendHsColor() },
+            valueRange = 0f..100f,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         Text(
             text = "Presets",
             style = MaterialTheme.typography.labelSmall,
@@ -403,6 +437,7 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
                         )
                         .clickable {
                             hueSlider = preset.hue
+                            satSlider = preset.saturation
                             onCallService(
                                 HaServiceCall(
                                     domain = "light",
