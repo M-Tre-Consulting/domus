@@ -1,9 +1,13 @@
 package dev.domus.android
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -89,6 +93,21 @@ object Routes {
 private fun DomusNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
+
+    // Android 16 (API 36) requires a runtime grant for local-network access.
+    // Request it immediately so the user sees the dialog on first launch rather
+    // than having to hunt for "Nearby devices" in Settings after hitting an error.
+    val localNetworkPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 36 &&
+            context.checkSelfPermission("android.permission.ACCESS_LOCAL_NETWORK") !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            localNetworkPermLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
+        }
+    }
     val connectionStore = remember { ConnectionStore(context.applicationContext) }
     val favoritesStore = remember { FavoritesStore(context.applicationContext) }
     val onboardingStore = remember { OnboardingStore(context.applicationContext) }
