@@ -1,5 +1,6 @@
 package dev.domus.android.ui.screens
 
+import android.annotation.SuppressLint
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
  * this screen only needs to intercept the final redirect and exchange the auth code for an
  * access/refresh token pair.
  */
+@SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OAuthLoginScreen(

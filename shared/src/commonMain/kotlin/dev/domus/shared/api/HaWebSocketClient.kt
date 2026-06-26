@@ -24,6 +24,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Streams realtime state-changed events from Home Assistant's WebSocket API
@@ -115,7 +116,7 @@ class HaWebSocketClient(
             put("type", commandType)
         }.toString()))
         return try {
-            withTimeout(5_000) {
+            withTimeout(5_000.milliseconds) {
                 while (true) {
                     val frame = incoming.receive()
                     if (frame !is Frame.Text) continue
@@ -144,7 +145,7 @@ class HaWebSocketClient(
                 @Suppress("UNREACHABLE_CODE")
                 JsonArray(emptyList())
             }
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             println("Domus: $commandType (id=$id) timed out after 5 s")
             JsonArray(emptyList())
         } catch (e: Exception) {
