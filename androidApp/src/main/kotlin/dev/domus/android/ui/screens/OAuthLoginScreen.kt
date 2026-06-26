@@ -1,6 +1,7 @@
 package dev.domus.android.ui.screens
 
 import android.annotation.SuppressLint
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -69,6 +70,22 @@ fun OAuthLoginScreen(
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     webViewClient = object : WebViewClient() {
+                        override fun onReceivedError(
+                            view: WebView,
+                            request: WebResourceRequest,
+                            error: WebResourceError,
+                        ) {
+                            if (!request.isForMainFrame) return
+                            val description = error.description?.toString() ?: "unknown error"
+                            // ERR_LOCAL_NETWORK_PERMISSION_MISSING (-234) fires on Android 16+
+                            // when the domain resolves to a private IP and the system permission
+                            // ACCESS_LOCAL_NETWORK is absent. Showing a clear message here is a
+                            // fallback; the manifest permission should prevent this in practice.
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Page failed to load: $description")
+                            }
+                        }
+
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val url = request.url.toString()
                             // Fix: Use exact match for the redirect URI path (ignoring query params)

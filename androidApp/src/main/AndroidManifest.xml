@@ -3,6 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required on Android 16+ for WebView to load URLs that resolve to private/local IPs.
+         Without this, attempting to open the HA OAuth login page on a local-network HA
+         instance fails with ERR_LOCAL_NETWORK_PERMISSION_MISSING. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:name=".DomusApplication"
