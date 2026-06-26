@@ -65,6 +65,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.abs
+import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalSharedTransitionScope
 
 private val COLOR_MODES_WITH_BRIGHTNESS = setOf("brightness", "color_temp", "hs", "rgb", "rgbw", "rgbww", "xy", "white")
 private val COLOR_MODES_WITH_TEMP = setOf("color_temp")
@@ -136,6 +138,32 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
         val hasColorTemp = colorModes.any { it in COLOR_MODES_WITH_TEMP }
         val hasColor = colorModes.any { it in COLOR_MODES_WITH_COLOR }
 
+        // Hero badge color: actual light hue when on+colored, primary when on, surfaceVariant when off.
+        val actualLightColor = if (isOn) {
+            entity.hueColor?.let { hs ->
+                Color.hsv(hs.first, (hs.second / 100f * 0.85f).coerceIn(0f, 1f), 0.95f)
+            }
+        } else null
+        val heroBgColor = actualLightColor
+            ?: if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+        val heroIconTint = if (actualLightColor != null) {
+            val lum = 0.299f * actualLightColor.red + 0.587f * actualLightColor.green + 0.114f * actualLightColor.blue
+            if (lum > 0.5f) Color.Black.copy(alpha = 0.87f) else Color.White
+        } else {
+            if (isOn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        val sharedTransitionScope = LocalSharedTransitionScope.current
+        val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+        val heroSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            with(sharedTransitionScope) {
+                Modifier.sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "hero_$entityId"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
+            }
+        } else Modifier
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -154,14 +182,14 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
                     )
                 },
                 shape = CircleShape,
-                color = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(96.dp),
+                color = heroBgColor,
+                modifier = heroSharedModifier.size(96.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.Lightbulb,
                         contentDescription = if (isOn) "Turn off" else "Turn on",
-                        tint = if (isOn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = heroIconTint,
                         modifier = Modifier.size(48.dp),
                     )
                 }

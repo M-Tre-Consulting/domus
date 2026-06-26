@@ -69,7 +69,11 @@ fun OAuthLoginScreen(
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val url = request.url.toString()
-                            if (!url.startsWith(oauthClient.redirectUri)) return false
+                            // Fix: Use exact match for the redirect URI path (ignoring query params)
+                            // "callbacks".startsWith("callback") was true, causing issues with external providers.
+                            val redirectUri = oauthClient.redirectUri
+                            val isRedirect = url.split('?').first() == redirectUri
+                            if (!isRedirect) return false
 
                             val code = request.url.getQueryParameter("code")
                             scope.launch {

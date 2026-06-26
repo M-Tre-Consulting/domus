@@ -26,6 +26,12 @@ class HaRepository(
     private val _entities = MutableStateFlow<Map<String, HaEntityState>>(emptyMap())
     val entities: StateFlow<Map<String, HaEntityState>> = _entities.asStateFlow()
 
+    /** entityId → human-readable area name; empty until the first WS connection completes. */
+    val areaEntityMap: StateFlow<Map<String, String>> = webSocketClient.areaEntityMap
+
+    /** Short diagnostic string from the last registry fetch; for temporary in-app display. */
+    val registryDiag: StateFlow<String> = webSocketClient.registryDiag
+
     suspend fun refresh() {
         val states = restApi.getStates()
         _entities.value = states.associateBy { it.entityId }

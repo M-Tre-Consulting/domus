@@ -44,6 +44,8 @@ import dev.domus.shared.model.todayEnergyKwh
 import dev.domus.shared.model.unitOfMeasurement
 import dev.domus.shared.model.voltageV
 import kotlinx.coroutines.launch
+import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalSharedTransitionScope
 
 private val POWER_DEVICE_CLASSES = setOf("power", "voltage", "current", "energy", "apparent_power")
 
@@ -92,6 +94,17 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
         }
 
         val isOn = entity.state.equals("on", ignoreCase = true)
+
+        val sharedTransitionScope = LocalSharedTransitionScope.current
+        val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+        val heroSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            with(sharedTransitionScope) {
+                Modifier.sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "hero_$entityId"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
+            }
+        } else Modifier
 
         // Collect power monitoring data. Try direct attributes on the switch entity first
         // (integrations like TP-Link Kasa embed power data there). If none are found, look for
@@ -161,7 +174,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 },
                 shape = CircleShape,
                 color = if (isOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(96.dp),
+                modifier = heroSharedModifier.size(96.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(

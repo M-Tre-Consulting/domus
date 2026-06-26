@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,10 +28,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalSharedTransitionScope
 import dev.domus.android.data.ConnectionStore
 import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.android.data.OnboardingStore
+import dev.domus.android.data.SettingsStore
 import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
@@ -37,6 +42,7 @@ import dev.domus.android.ui.screens.EntityPickerScreen
 import dev.domus.android.ui.screens.LightDetailScreen
 import dev.domus.android.ui.screens.OAuthLoginScreen
 import dev.domus.android.ui.screens.OnboardingScreen
+import dev.domus.android.ui.screens.SettingsScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.shared.data.HaSession
@@ -65,6 +71,7 @@ object Routes {
     const val ONBOARDING = "onboarding"
     const val CONNECT = "connect"
     const val DASHBOARD = "dashboard"
+    const val SETTINGS = "settings"
     const val PICKER = "picker"
     const val CLIMATE_DETAIL = "climate_detail"
     const val LIGHT_DETAIL = "light_detail"
@@ -81,6 +88,7 @@ private fun DomusNavHost() {
     val connectionStore = remember { ConnectionStore(context.applicationContext) }
     val favoritesStore = remember { FavoritesStore(context.applicationContext) }
     val onboardingStore = remember { OnboardingStore(context.applicationContext) }
+    val settingsStore = remember { SettingsStore(context.applicationContext) }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState(initial = emptySet())
     val scope = rememberCoroutineScope()
 
@@ -88,6 +96,8 @@ private fun DomusNavHost() {
         connectionStore.save(HaConnectionConfig(baseUrl, refreshed))
     }
 
+    SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH,
@@ -181,27 +191,31 @@ private fun DomusNavHost() {
                     }
                 }
             } else {
-                DashboardScreen(
-                    session = session,
-                    favoriteEntityIds = favoriteEntityIds,
-                    onEditEntities = { navController.navigate(Routes.PICKER) },
-                    onLogout = {
-                        scope.launch { connectionStore.clear() }
-                        HaSessionHolder.disconnect()
-                        navController.navigate(Routes.CONNECT) {
-                            popUpTo(Routes.DASHBOARD) { inclusive = true }
-                        }
-                    },
-                    onOpenDetail = { entityId ->
-                        val domain = session.repository.entities.value[entityId]?.domain
-                        when (domain) {
-                            "climate", "water_heater" -> navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
-                            "light" -> navController.navigate("${Routes.LIGHT_DETAIL}/$entityId")
-                            "switch" -> navController.navigate("${Routes.SWITCH_DETAIL}/$entityId")
-                            else -> {}
-                        }
-                    },
-                )
+                CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                    DashboardScreen(
+                        session = session,
+                        settingsStore = settingsStore,
+                        favoriteEntityIds = favoriteEntityIds,
+                        onEditEntities = { navController.navigate(Routes.PICKER) },
+                        onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                        onLogout = {
+                            scope.launch { connectionStore.clear() }
+                            HaSessionHolder.disconnect()
+                            navController.navigate(Routes.CONNECT) {
+                                popUpTo(Routes.DASHBOARD) { inclusive = true }
+                            }
+                        },
+                        onOpenDetail = { entityId ->
+                            val domain = session.repository.entities.value[entityId]?.domain
+                            when (domain) {
+                                "climate", "water_heater" -> navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
+                                "light" -> navController.navigate("${Routes.LIGHT_DETAIL}/$entityId")
+                                "switch" -> navController.navigate("${Routes.SWITCH_DETAIL}/$entityId")
+                                else -> {}
+                            }
+                        },
+                    )
+                }
             }
         }
         composable(
@@ -229,7 +243,9 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.LIGHT_DETAIL) { inclusive = true } }
                 }
             } else {
-                LightDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                    LightDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                }
             }
         }
         composable(
@@ -243,7 +259,9 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.SWITCH_DETAIL) { inclusive = true } }
                 }
             } else {
-                SwitchDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                    SwitchDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                }
             }
         }
         composable(Routes.PICKER) {
@@ -267,5 +285,13 @@ private fun DomusNavHost() {
                 )
             }
         }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                settingsStore = settingsStore,
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
+    } // CompositionLocalProvider(LocalSharedTransitionScope)
+    } // SharedTransitionLayout
 }

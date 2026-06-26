@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -83,6 +84,11 @@ import dev.domus.shared.model.targetTemperature
 import dev.domus.shared.model.temperatureUnit
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import androidx.compose.ui.graphics.Color
+import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalSharedTransitionScope
+import dev.domus.android.data.SettingsStore
+import dev.domus.shared.model.hueColor
 
 /** Domains where `homeassistant.toggle` is a meaningful action, not just a read-only sensor. */
 private val TOGGLEABLE_DOMAINS = setOf("light", "switch", "fan", "automation", "input_boolean", "siren")
@@ -107,16 +113,28 @@ private fun isActiveState(domain: String, state: String): Boolean {
     }
 }
 
+/** Derives a badge background color from the light's current hs_color attribute. */
+private fun lightBadgeColor(entity: HaEntityState): Color? {
+    if (!entity.state.equals("on", ignoreCase = true)) return null
+    val hs = entity.hueColor ?: return null
+    return Color.hsv(hs.first, (hs.second / 100f * 0.85f).coerceIn(0f, 1f), 0.95f)
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DashboardScreen(
     session: HaSession,
+    settingsStore: SettingsStore,
     favoriteEntityIds: Set<String>,
     onEditEntities: () -> Unit,
+    onOpenSettings: () -> Unit,
     onLogout: () -> Unit,
     onOpenDetail: (entityId: String) -> Unit,
 ) {
     val entities by session.repository.entities.collectAsState()
+    val areaEntityMap by session.repository.areaEntityMap.collectAsState()
+    val registryDiag by session.repository.registryDiag.collectAsState()
+    val showDebugDiag by settingsStore.showDebugDiag.collectAsState(initial = true)
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -152,8 +170,24 @@ fun DashboardScreen(
     val groupedEntities = entities.values
         .filter { it.entityId in favoriteEntityIds }
         .sortedBy { it.friendlyName }
-        .groupBy { domainLabel(it.domain) }
-        .toSortedMap()
+        .groupBy { entity ->
+            if (areaEntityMap.isNotEmpty()) areaEntityMap[entity.entityId] ?: "Other"
+            else domainLabel(entity.domain)
+        }
+        .let { groups ->
+            if (areaEntityMap.isNotEmpty()) {
+                // "Other" (entities not assigned to any area) always sorts last
+                groups.toSortedMap { a, b ->
+                    when {
+                        a == "Other" -> 1
+                        b == "Other" -> -1
+                        else -> a.compareTo(b)
+                    }
+                }
+            } else {
+                groups.toSortedMap()
+            }
+        }
 
     fun callService(call: HaServiceCall) {
         scope.launch {
@@ -168,10 +202,24 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Domus") },
+                title = {
+                    Column {
+                        Text("Domus")
+                        if (showDebugDiag) {
+                            Text(
+                                text = registryDiag,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = onEditEntities) {
                         Icon(imageVector = Icons.Filled.Edit, contentDescription = "Choose entities")
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(imageVector = Icons.Filled.Settings, contentDescription = "Settings")
                     }
                     IconButton(onClick = onLogout) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = "Disconnect")
@@ -277,17 +325,45 @@ private fun DomainHeader(label: String) {
 }
 
 @Composable
-private fun EntityIconBadge(domain: String, isActive: Boolean, size: Int = 40) {
+private fun EntityIconBadge(
+    domain: String,
+    isActive: Boolean,
+    modifier: Modifier = Modifier,
+    overrideColor: Color? = null,
+    sharedKey: String? = null,
+    size: Int = 40,
+) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    val bgColor = overrideColor
+        ?: if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    val iconTint = if (overrideColor != null) {
+        val lum = 0.299f * overrideColor.red + 0.587f * overrideColor.green + 0.114f * overrideColor.blue
+        if (lum > 0.5f) Color.Black.copy(alpha = 0.87f) else Color.White
+    } else {
+        if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val sharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && sharedKey != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                sharedContentState = rememberSharedContentState(key = sharedKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+            )
+        }
+    } else Modifier
+
     Surface(
         shape = CircleShape,
-        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.size(size.dp),
+        color = bgColor,
+        modifier = modifier.then(sharedModifier).size(size.dp),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = iconForDomain(domain),
                 contentDescription = null,
-                tint = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = iconTint,
                 modifier = Modifier.size((size * 0.55f).dp),
             )
         }
@@ -318,7 +394,12 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EntityIconBadge(domain = entity.domain, isActive = isActive)
+                EntityIconBadge(
+                    domain = entity.domain,
+                    isActive = isActive,
+                    overrideColor = lightBadgeColor(entity),
+                    sharedKey = "hero_${entity.entityId}",
+                )
                 if (isToggleable) {
                     Switch(
                         checked = entity.state.equals("on", ignoreCase = true),
@@ -381,7 +462,12 @@ private fun EntityCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                EntityIconBadge(domain = entity.domain, isActive = isActive)
+                EntityIconBadge(
+                    domain = entity.domain,
+                    isActive = isActive,
+                    overrideColor = lightBadgeColor(entity),
+                    sharedKey = "hero_${entity.entityId}",
+                )
                 Column(
                     modifier = Modifier
                         .weight(1f)
