@@ -40,6 +40,14 @@ data class HaConnectionConfig(
     }
 }
 
+/** A single point from the `/api/history` endpoint (minimal_response mode). */
+@Serializable
+data class HaHistoryPoint(
+    @SerialName("entity_id") val entityId: String = "",
+    val state: String,
+    @SerialName("last_changed") val lastChanged: String,
+)
+
 /** A request to invoke a Home Assistant service (e.g. `light.turn_on`). */
 data class HaServiceCall(
     val domain: String,

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaServiceCall
@@ -208,6 +210,8 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 InfoCard(rows = powerRows)
             }
 
+            HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
+            StateHistorySection(session = session, entityId = entityId, modifier = Modifier.align(Alignment.Start))
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
         }
     }

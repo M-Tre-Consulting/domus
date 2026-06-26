@@ -138,3 +138,37 @@ val HaEntityState.deviceClass: String?
 
 val HaEntityState.unitOfMeasurement: String?
     get() = (attribute("unit_of_measurement") as? JsonPrimitive)?.contentOrNull
+
+// Media player attributes
+val HaEntityState.mediaAlbum: String?
+    get() = (attribute("media_album_name") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.mediaDuration: Double?
+    get() = (attribute("media_duration") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.mediaPosition: Double?
+    get() = (attribute("media_position") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.mediaPositionUpdatedAt: String?
+    get() = (attribute("media_position_updated_at") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.volumeLevel: Float?
+    get() = (attribute("volume_level") as? JsonPrimitive)?.doubleOrNull?.toFloat()
+
+val HaEntityState.isVolumeMuted: Boolean
+    get() = (attribute("is_volume_muted") as? JsonPrimitive)?.contentOrNull?.equals("true", ignoreCase = true) == true
+
+val HaEntityState.mediaSource: String?
+    get() = (attribute("source") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.sourceList: List<String>
+    get() = stringList("source_list")
+
+val HaEntityState.isShuffle: Boolean
+    get() = (attribute("shuffle") as? JsonPrimitive)?.contentOrNull?.equals("true", ignoreCase = true) == true
+
+val HaEntityState.repeatMode: String
+    get() = (attribute("repeat") as? JsonPrimitive)?.contentOrNull ?: "off"
+
+val HaEntityState.entityPicture: String?
+    get() = (attribute("entity_picture") as? JsonPrimitive)?.contentOrNull

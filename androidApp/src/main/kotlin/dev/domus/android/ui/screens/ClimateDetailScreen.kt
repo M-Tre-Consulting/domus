@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.android.ui.components.TemperatureDial
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -239,6 +240,8 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
             }
             InfoCard(rows = infoRows)
 
+            HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
+            StateHistorySection(session = session, entityId = entityId)
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg.dp))
         }
     }

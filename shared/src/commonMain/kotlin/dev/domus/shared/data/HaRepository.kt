@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class WebSocketState { Connecting, Connected, Reconnecting }
 
@@ -62,7 +63,7 @@ class HaRepository(
                     println("Domus: WebSocket dropped (${e::class.simpleName}: ${e.message}), reconnecting in 5 s")
                 }
                 _wsState.value = WebSocketState.Reconnecting
-                delay(5_000)
+                delay(5_000.milliseconds)
                 try { refresh() } catch (_: Exception) {}
             }
         }

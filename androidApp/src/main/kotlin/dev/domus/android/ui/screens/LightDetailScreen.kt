@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaEntityState
@@ -230,6 +231,8 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
                 }
             }
 
+            HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.lg.dp))
+            StateHistorySection(session = session, entityId = entityId)
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
         }
     }

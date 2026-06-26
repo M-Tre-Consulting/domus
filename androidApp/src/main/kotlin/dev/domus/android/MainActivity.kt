@@ -40,6 +40,7 @@ import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
 import dev.domus.android.ui.screens.EntityPickerScreen
 import dev.domus.android.ui.screens.LightDetailScreen
+import dev.domus.android.ui.screens.MediaPlayerDetailScreen
 import dev.domus.android.ui.screens.OAuthLoginScreen
 import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.screens.SettingsScreen
@@ -76,6 +77,7 @@ object Routes {
     const val CLIMATE_DETAIL = "climate_detail"
     const val LIGHT_DETAIL = "light_detail"
     const val SWITCH_DETAIL = "switch_detail"
+    const val MEDIA_PLAYER_DETAIL = "media_player_detail"
     const val ENTITY_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
@@ -211,6 +213,7 @@ private fun DomusNavHost() {
                                 "climate", "water_heater" -> navController.navigate("${Routes.CLIMATE_DETAIL}/$entityId")
                                 "light" -> navController.navigate("${Routes.LIGHT_DETAIL}/$entityId")
                                 "switch" -> navController.navigate("${Routes.SWITCH_DETAIL}/$entityId")
+                                "media_player" -> navController.navigate("${Routes.MEDIA_PLAYER_DETAIL}/$entityId")
                                 else -> {}
                             }
                         },
@@ -262,6 +265,20 @@ private fun DomusNavHost() {
                 CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                     SwitchDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
                 }
+            }
+        }
+        composable(
+            route = "${Routes.MEDIA_PLAYER_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.MEDIA_PLAYER_DETAIL) { inclusive = true } }
+                }
+            } else {
+                MediaPlayerDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {
