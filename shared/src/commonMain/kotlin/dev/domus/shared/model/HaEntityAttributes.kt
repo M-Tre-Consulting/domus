@@ -170,3 +170,7 @@ val HaEntityState.isShuffle: Boolean
 val HaEntityState.repeatMode: String
     get() = (attribute("repeat") as? JsonPrimitive)?.contentOrNull ?: "off"
 
+// Lock attributes
+val HaEntityState.changedBy: String?
+    get() = (attribute("changed_by") as? JsonPrimitive)?.contentOrNull
+

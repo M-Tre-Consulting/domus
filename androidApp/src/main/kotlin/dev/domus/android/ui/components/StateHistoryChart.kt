@@ -2,6 +2,8 @@ package dev.domus.android.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -21,6 +24,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +38,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.domus.shared.DesignTokens
@@ -49,11 +54,7 @@ private val ACTIVE_STATES = setOf(
 
 private data class ChartPoint(val timeMs: Long, val value: Double?, val state: String)
 
-private val TIME_RANGES = listOf(
-    24   to "24 h",
-    48   to "48 h",
-    168  to "7 days",
-)
+private val TIME_RANGES = listOf(24 to "24 h", 48 to "48 h", 168 to "7 days")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,13 +64,9 @@ fun StateHistorySection(
     entityName: String = entityId,
     modifier: Modifier = Modifier,
 ) {
-    // Inline 24-hour fetch
     var points by remember(entityId) { mutableStateOf<List<HaHistoryPoint>?>(null) }
-    LaunchedEffect(entityId) {
-        points = session.restApi.getHistory(entityId)
-    }
+    LaunchedEffect(entityId) { points = session.restApi.getHistory(entityId) }
 
-    // Bottom sheet state
     var showSheet by remember { mutableStateOf(false) }
     var sheetHours by remember { mutableIntStateOf(24) }
     var sheetPoints by remember { mutableStateOf<List<HaHistoryPoint>?>(null) }
@@ -142,10 +139,7 @@ fun StateHistorySection(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = DesignTokens.Spacing.md.dp),
                 )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp)) {
                     TIME_RANGES.forEach { (h, label) ->
                         FilterChip(
                             selected = sheetHours == h,
@@ -154,16 +148,13 @@ fun StateHistorySection(
                         )
                     }
                 }
-
                 Spacer(Modifier.height(DesignTokens.Spacing.md.dp))
 
                 when {
                     sheetPoints == null -> Box(
                         Modifier.fillMaxWidth().height(160.dp),
                         contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    ) { CircularProgressIndicator() }
 
                     sheetPoints!!.isEmpty() -> Text(
                         text = "No history available for this period",
@@ -200,12 +191,37 @@ private fun StateHistoryChart(
 ) {
     val chartPoints = remember(points) {
         points.mapNotNull { p ->
-            val ms = try { Instant.parse(p.lastChanged).toEpochMilliseconds() } catch (_: Exception) { return@mapNotNull null }
+            val ms = try {
+                Instant.parse(p.lastChanged).toEpochMilliseconds()
+            } catch (_: Exception) {
+                return@mapNotNull null
+            }
             ChartPoint(ms, p.state.toDoubleOrNull(), p.state)
         }.sortedBy { it.timeMs }
     }
+    val isNumeric = chartPoints.isNotEmpty() && chartPoints.all { it.value != null }
 
-    val isNumeric = remember(chartPoints) { chartPoints.all { it.value != null } && chartPoints.any { it.value != null } }
+    var scale by remember { mutableFloatStateOf(1f) }
+    var panOffsetFraction by remember { mutableFloatStateOf(0f) }
+    var canvasWidthPx by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(windowStartMs, windowEndMs) {
+        scale = 1f
+        panOffsetFraction = 0f
+    }
+
+    val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+        val newScale = (scale * zoomChange).coerceIn(1f, 8f)
+        val maxOffset = (1f - 1f / newScale).coerceAtLeast(0f)
+        val panDelta = if (canvasWidthPx > 0f) (-panChange.x / canvasWidthPx) * (1f / newScale) else 0f
+        panOffsetFraction = (panOffsetFraction + panDelta).coerceIn(0f, maxOffset)
+        scale = newScale
+    }
+
+    val totalMs = (windowEndMs - windowStartMs).toFloat()
+    val effectiveStart = if (largeMode) windowStartMs + (totalMs * panOffsetFraction).toLong() else windowStartMs
+    val effectiveEnd = if (largeMode) (effectiveStart + totalMs / scale).toLong().coerceAtMost(windowEndMs) else windowEndMs
+    val drawDurationMs = (effectiveEnd - effectiveStart).toFloat().coerceAtLeast(1f)
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
@@ -213,10 +229,29 @@ private fun StateHistoryChart(
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
     val shape = MaterialTheme.shapes.small
 
-    val windowDurationMs = (windowEndMs - windowStartMs).toFloat()
-
     val timelineHeight: Dp = if (largeMode) 120.dp else 56.dp
     val lineChartHeight: Dp = if (largeMode) 200.dp else 100.dp
+
+    // Zoom hint / reset chip above chart (largeMode only)
+    if (largeMode) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            if (scale > 1.05f) {
+                AssistChip(
+                    onClick = { scale = 1f; panOffsetFraction = 0f },
+                    label = { Text("Reset zoom  ×${"%.1f".format(scale)}") },
+                )
+            } else {
+                Text(
+                    text = "Pinch to zoom · pan to scroll",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = onSurfaceVariantColor.copy(alpha = 0.6f),
+                )
+            }
+        }
+    }
 
     if (isNumeric) {
         val numericPoints = chartPoints.filter { it.value != null }
@@ -227,6 +262,8 @@ private fun StateHistoryChart(
         Canvas(
             modifier = modifier
                 .height(lineChartHeight)
+                .onSizeChanged { canvasWidthPx = it.width.toFloat() }
+                .run { if (largeMode) transformable(transformableState) else this }
                 .clip(shape),
         ) {
             drawRect(surfaceVariantColor.copy(alpha = 0.3f))
@@ -236,20 +273,15 @@ private fun StateHistoryChart(
             var prevY = size.height / 2f
 
             numericPoints.forEachIndexed { i, pt ->
-                val x = ((pt.timeMs - windowStartMs) / windowDurationMs * size.width).coerceIn(0f, size.width)
+                val x = ((pt.timeMs - effectiveStart) / drawDurationMs * size.width).coerceIn(0f, size.width)
                 val y = ((1.0 - (pt.value!! - minVal) / valRange) * size.height).toFloat().coerceIn(0f, size.height)
 
                 if (i == 0) {
-                    linePath.moveTo(0f, y)
-                    linePath.lineTo(x, y)
-                    fillPath.moveTo(0f, size.height)
-                    fillPath.lineTo(0f, y)
-                    fillPath.lineTo(x, y)
+                    linePath.moveTo(0f, y); linePath.lineTo(x, y)
+                    fillPath.moveTo(0f, size.height); fillPath.lineTo(0f, y); fillPath.lineTo(x, y)
                 } else {
-                    linePath.lineTo(x, prevY)
-                    linePath.lineTo(x, y)
-                    fillPath.lineTo(x, prevY)
-                    fillPath.lineTo(x, y)
+                    linePath.lineTo(x, prevY); linePath.lineTo(x, y)
+                    fillPath.lineTo(x, prevY); fillPath.lineTo(x, y)
                 }
                 prevY = y
             }
@@ -259,11 +291,7 @@ private fun StateHistoryChart(
             fillPath.close()
 
             drawPath(fillPath, primaryContainerColor.copy(alpha = 0.4f))
-            drawPath(
-                linePath,
-                primaryColor,
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
+            drawPath(linePath, primaryColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
 
         Row(
@@ -277,18 +305,20 @@ private fun StateHistoryChart(
         Canvas(
             modifier = modifier
                 .height(timelineHeight)
+                .onSizeChanged { canvasWidthPx = it.width.toFloat() }
+                .run { if (largeMode) transformable(transformableState) else this }
                 .clip(shape),
         ) {
             drawRect(surfaceVariantColor.copy(alpha = 0.5f))
 
             chartPoints.forEachIndexed { i, pt ->
                 val nextPt = chartPoints.getOrNull(i + 1)
-                val x1 = ((pt.timeMs - windowStartMs) / windowDurationMs * size.width).coerceIn(0f, size.width)
-                val x2 = if (nextPt != null)
-                    ((nextPt.timeMs - windowStartMs) / windowDurationMs * size.width).coerceIn(0f, size.width)
-                else
+                val x1 = ((pt.timeMs - effectiveStart) / drawDurationMs * size.width).coerceIn(0f, size.width)
+                val x2 = if (nextPt != null) {
+                    ((nextPt.timeMs - effectiveStart) / drawDurationMs * size.width).coerceIn(0f, size.width)
+                } else {
                     size.width
-
+                }
                 if (pt.state in ACTIVE_STATES) {
                     drawRect(
                         color = primaryColor,
@@ -309,7 +339,6 @@ private fun StateHistoryChart(
         }
     }
 
-    // Time axis labels — show date prefix in large (multi-day) mode
     val formatLabel = { ms: Long ->
         val str = Instant.fromEpochMilliseconds(ms).toString()
         if (largeMode) str.substring(5, 16).replace('T', ' ') else str.substring(11, 16)
@@ -318,7 +347,7 @@ private fun StateHistoryChart(
         modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(formatLabel(windowStartMs), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
-        Text(formatLabel(windowEndMs), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
+        Text(formatLabel(effectiveStart), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
+        Text(formatLabel(effectiveEnd), style = MaterialTheme.typography.labelSmall, color = onSurfaceVariantColor)
     }
 }
