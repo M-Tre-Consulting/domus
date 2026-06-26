@@ -15,7 +15,11 @@ fun createHttpClient(): HttpClient = httpClientEngine().config {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
-    install(WebSockets)
+    install(WebSockets) {
+        // Keep connection alive through WiFi NAT timeouts, which are typically
+        // 30-120 s on consumer routers but much longer on mobile carrier infra.
+        pingIntervalMillis = 20_000
+    }
     install(Logging) {
         level = LogLevel.INFO
     }

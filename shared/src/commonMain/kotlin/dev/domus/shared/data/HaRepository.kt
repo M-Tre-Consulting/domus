@@ -4,7 +4,9 @@ import dev.domus.shared.api.HaRestApi
 import dev.domus.shared.api.HaWebSocketClient
 import dev.domus.shared.model.HaEntityState
 import dev.domus.shared.model.HaServiceCall
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +44,22 @@ class HaRepository(
     }
 
     fun startRealtimeUpdates(scope: CoroutineScope) {
-        scope.launch { webSocketClient.connectAndListen() }
+        scope.launch {
+            while (true) {
+                try {
+                    webSocketClient.connectAndListen()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    println("Domus: WebSocket dropped (${e::class.simpleName}: ${e.message}), reconnecting in 5 s")
+                }
+                // Whether the connection closed cleanly or with an error, wait then
+                // refresh the REST snapshot (to catch any state changes missed while
+                // the socket was down) and then connectAndListen() reconnects.
+                delay(5_000)
+                try { refresh() } catch (_: Exception) {}
+            }
+        }
         scope.launch {
             webSocketClient.events.collect { event ->
                 val newState = event["event"]
