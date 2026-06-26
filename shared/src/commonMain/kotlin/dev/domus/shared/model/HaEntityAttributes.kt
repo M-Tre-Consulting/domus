@@ -170,5 +170,3 @@ val HaEntityState.isShuffle: Boolean
 val HaEntityState.repeatMode: String
     get() = (attribute("repeat") as? JsonPrimitive)?.contentOrNull ?: "off"
 
-val HaEntityState.entityPicture: String?
-    get() = (attribute("entity_picture") as? JsonPrimitive)?.contentOrNull

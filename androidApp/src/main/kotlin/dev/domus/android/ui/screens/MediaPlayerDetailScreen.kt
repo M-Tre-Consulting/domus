@@ -65,7 +65,6 @@ import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaServiceCall
-import dev.domus.shared.model.entityPicture
 import dev.domus.shared.model.friendlyName
 import dev.domus.shared.model.isVolumeMuted
 import dev.domus.shared.model.isShuffle
@@ -85,6 +84,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,7 +131,6 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
         }
 
         val isPlaying = entity.state.equals("playing", ignoreCase = true)
-        val isActive = entity.state !in setOf("off", "unavailable", "unknown")
         val duration = entity.mediaDuration
         val hasDuration = duration != null && duration > 0.0
 
@@ -149,7 +148,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
             while (true) {
                 val elapsed = (Clock.System.now() - updatedAt).inWholeSeconds.toDouble()
                 displayPositionSec = (pos + elapsed).coerceIn(0.0, duration ?: Double.MAX_VALUE)
-                delay(1_000)
+                delay(1_000.milliseconds)
             }
         }
 

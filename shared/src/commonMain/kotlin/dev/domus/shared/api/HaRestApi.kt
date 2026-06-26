@@ -42,16 +42,6 @@ class HaRestApi(
         return response.body()
     }
 
-    suspend fun getState(entityId: String): HaEntityState {
-        val response = client.get("$baseUrl/api/states/$entityId") {
-            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
-        }
-        if (!response.status.isSuccess()) {
-            throw HaApiException("Failed to fetch state for $entityId", response.status.value)
-        }
-        return response.body()
-    }
-
     suspend fun callService(call: HaServiceCall): List<HaEntityState> {
         val body = buildMap<String, JsonElement> {
             call.entityId?.let { put("entity_id", JsonPrimitive(it)) }

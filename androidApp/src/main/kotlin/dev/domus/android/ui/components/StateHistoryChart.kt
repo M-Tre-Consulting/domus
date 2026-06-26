@@ -1,6 +1,5 @@
 package dev.domus.android.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -212,7 +211,6 @@ private fun StateHistoryChart(
     }
 
     // Time axis labels
-    val labelMs = windowEndMs - windowStartMs
     val labelStartHour = Instant.fromEpochMilliseconds(windowStartMs).toString().substring(11, 16)
     val labelEndHour = Instant.fromEpochMilliseconds(windowEndMs).toString().substring(11, 16)
     Row(
