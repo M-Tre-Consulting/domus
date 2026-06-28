@@ -46,7 +46,7 @@ fun ConnectScreen(
     onLoginWithHomeAssistant: (baseUrl: String) -> Unit,
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    var baseUrl by remember { mutableStateOf("") }
+    var baseUrl by remember { mutableStateOf("https://") }
     var token by remember { mutableStateOf("") }
     var isConnecting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
