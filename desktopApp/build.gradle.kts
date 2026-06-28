@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.material.icons.extended)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 }
 
 compose.desktop {
