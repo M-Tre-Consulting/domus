@@ -51,6 +51,7 @@ import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.screens.SettingsScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
+import dev.domus.shared.api.HaApiException
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaConnectionConfig
 import dev.domus.shared.model.HaCredentials
@@ -132,11 +133,20 @@ private fun DomusNavHost() {
         composable(Routes.SPLASH) {
             LaunchedEffect(Unit) {
                 val savedConfig = connectionStore.read()
+                // Reconnect using saved credentials.
+                // HaApiException(401/403) means credentials are invalid → force re-login.
+                // Any other exception (network timeout, server unreachable) is transient —
+                // keep the session and let the Dashboard's WS reconnect loop recover.
                 val reconnected = savedConfig?.let { config ->
-                    runCatching {
-                        val session = HaSession(config, persistRefreshed(config.baseUrl))
-                        if (session.restApi.checkConnection()) session else null
-                    }.getOrNull()
+                    val session = HaSession(config, persistRefreshed(config.baseUrl))
+                    try {
+                        session.restApi.checkConnection()
+                        session
+                    } catch (e: HaApiException) {
+                        null // Explicit 401/403: credentials rejected, must re-login
+                    } catch (_: Exception) {
+                        session // Network error: go to Dashboard, it will reconnect
+                    }
                 }
 
                 if (reconnected != null) {

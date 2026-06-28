@@ -80,9 +80,18 @@ class HaRestApi(
         }
     }
 
+    /**
+     * Returns true if the server responded successfully.
+     * Throws [HaApiException] with status 401/403 when credentials are invalid (caller
+     * should prompt re-login). Other network/HTTP errors propagate as plain exceptions so
+     * callers can distinguish "auth rejected" from "server temporarily unreachable."
+     */
     suspend fun checkConnection(): Boolean {
         val response = client.get("$baseUrl/api/") {
             header("Authorization", "Bearer ${tokenProvider.accessToken()}")
+        }
+        if (response.status.value == 401 || response.status.value == 403) {
+            throw HaApiException("Authentication failed", response.status.value)
         }
         return response.status.isSuccess()
     }
