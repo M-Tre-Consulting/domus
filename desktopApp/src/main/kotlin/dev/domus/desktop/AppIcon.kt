@@ -24,7 +24,7 @@ fun appIconBitmap(size: Int): ImageBitmap {
     canvas.drawCircle(Offset(s / 2, s / 2), s / 2, paint(blue))
 
     // House body
-    canvas.drawRect(Rect(s * 0.20f, s * 0.46f, s * 0.80f, s * 0.82f), paint(white))
+    canvas.drawRect(s * 0.20f, s * 0.46f, s * 0.80f, s * 0.82f, paint(white))
 
     // Roof triangle
     val roof = Path()
