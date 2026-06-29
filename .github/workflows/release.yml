@@ -90,8 +90,42 @@ jobs:
           name: desktop-windows
           path: desktopApp/build/compose/binaries/main/msi/*.msi
 
+  desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'jetbrains'
+          java-version: '21'
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install rpm tools
+        run: sudo apt-get install -y rpm
+
+      - name: Build Linux packages
+        run: ./gradlew :desktopApp:packageDeb :desktopApp:packageRpm :desktopApp:packageAppImage -PpackageVersion="$VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            desktopApp/build/compose/binaries/main/deb/*.deb
+            desktopApp/build/compose/binaries/main/rpm/*.rpm
+            desktopApp/build/compose/binaries/main/app/*.AppImage
+
   release:
-    needs: [android, desktop-windows]
+    needs: [android, desktop-windows, desktop-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -110,3 +144,8 @@ jobs:
             **Android** — Download the APK directly or add this repo to [Obtainium](https://github.com/ImranR98/Obtainium) for automatic updates.
 
             **Windows** — Download and run the MSI installer.
+
+            **Linux** — Download the package for your distro:
+            - `.deb` — Debian, Ubuntu, Mint: `sudo dpkg -i domus_*.deb`
+            - `.rpm` — Fedora, RHEL, openSUSE: `sudo rpm -i domus-*.rpm`
+            - `.AppImage` — Everything else: `chmod +x Domus-*.AppImage && ./Domus-*.AppImage`
