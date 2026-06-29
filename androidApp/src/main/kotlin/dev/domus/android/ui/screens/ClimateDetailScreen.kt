@@ -36,12 +36,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -71,6 +73,7 @@ import dev.domus.shared.model.targetTemperature
 import dev.domus.shared.model.temperatureUnit
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import dev.domus.android.ui.LocalRefreshIntervalSeconds
 
 /**
  * Full detail screen for a `climate`/`water_heater` entity, styled after the Google Home
@@ -86,6 +89,14 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)

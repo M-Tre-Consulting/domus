@@ -36,12 +36,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -69,6 +71,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.abs
 import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import dev.domus.android.ui.LocalSharedTransitionScope
 
 private val COLOR_MODES_WITH_BRIGHTNESS = setOf("brightness", "color_temp", "hs", "rgb", "rgbw", "rgbww", "xy", "white")
@@ -98,6 +101,14 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)

@@ -79,6 +79,7 @@ import dev.domus.shared.model.repeatMode
 import dev.domus.shared.model.sourceList
 import dev.domus.shared.model.volumeLevel
 import androidx.compose.runtime.rememberCoroutineScope
+import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
@@ -94,6 +95,14 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)

@@ -26,10 +26,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -49,6 +51,7 @@ import dev.domus.shared.model.unitOfMeasurement
 import dev.domus.shared.model.voltageV
 import kotlinx.coroutines.launch
 import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import dev.domus.android.ui.LocalSharedTransitionScope
 
 private val POWER_DEVICE_CLASSES = setOf("power", "voltage", "current", "energy", "apparent_power")
@@ -61,6 +64,18 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        val switchName = entityId.substringAfter('.')
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            val ids = session.repository.entities.value.keys
+                .filter { it.substringBefore('.') == "sensor" && it.substringAfter('.').startsWith(switchName) }
+                .toMutableSet().also { it.add(entityId) }
+            try { session.repository.refreshEntities(ids) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
