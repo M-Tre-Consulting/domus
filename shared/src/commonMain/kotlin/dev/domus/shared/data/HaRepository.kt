@@ -45,6 +45,17 @@ class HaRepository(
         _entities.value = states.associateBy { it.entityId }
     }
 
+    /** Fetches only the listed entity IDs and merges them into the map. Cheaper than [refresh]
+     *  when a detail screen only needs to stay current on a small set of entities. */
+    suspend fun refreshEntities(entityIds: Collection<String>) {
+        entityIds.forEach { id ->
+            try {
+                val state = restApi.getState(id)
+                _entities.value = _entities.value + (id to state)
+            } catch (_: Exception) {}
+        }
+    }
+
     suspend fun callService(call: HaServiceCall) {
         restApi.callService(call)
     }

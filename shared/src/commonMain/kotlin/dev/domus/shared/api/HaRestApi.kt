@@ -32,6 +32,14 @@ class HaRestApi(
     private val tokenProvider: HaTokenProvider,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    suspend fun getState(entityId: String): HaEntityState {
+        val response = client.get("$baseUrl/api/states/$entityId") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
+        }
+        if (!response.status.isSuccess()) throw HaApiException("Failed to fetch state: $entityId", response.status.value)
+        return response.body()
+    }
+
     suspend fun getStates(): List<HaEntityState> {
         val response = client.get("$baseUrl/api/states") {
             header("Authorization", "Bearer ${tokenProvider.accessToken()}")
