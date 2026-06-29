@@ -58,7 +58,8 @@ private sealed interface Screen {
 
 fun main() = application {
     val windowState = rememberWindowState(size = DpSize(1100.dp, 750.dp))
-    Window(onCloseRequest = ::exitApplication, title = "Domus", state = windowState) {
+    val icon = remember { appIconPainter() }
+    Window(onCloseRequest = ::exitApplication, title = "Domus", state = windowState, icon = icon) {
         DomusDesktopTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
                 App()
