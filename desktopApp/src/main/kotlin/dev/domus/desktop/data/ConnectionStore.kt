@@ -15,7 +15,8 @@ class ConnectionStore {
             "oauth" -> {
                 val refreshToken = PREFS.get("refresh_token", null) ?: return null
                 val expiresAt = PREFS.getLong("expires_at", 0L)
-                HaConnectionConfig.withOAuthSession(baseUrl, accessToken, refreshToken, expiresAt)
+                val oauthClientId = PREFS.get("oauth_client_id", null)
+                HaConnectionConfig.withOAuthSession(baseUrl, accessToken, refreshToken, expiresAt, oauthClientId)
             }
             else -> HaConnectionConfig.withToken(baseUrl, accessToken)
         }
@@ -35,6 +36,8 @@ class ConnectionStore {
                 PREFS.put("access_token", creds.accessToken)
                 PREFS.put("refresh_token", creds.refreshToken)
                 PREFS.putLong("expires_at", creds.expiresAtEpochMillis)
+                if (creds.oauthClientId != null) PREFS.put("oauth_client_id", creds.oauthClientId)
+                else PREFS.remove("oauth_client_id")
             }
         }
         PREFS.flush()

@@ -19,7 +19,12 @@ class HaSession(
 ) {
     private val httpClient = createHttpClient()
     private val tokenProvider = HaTokenProvider(
-        oauthClient = HaOAuthClient(httpClient, config.baseUrl),
+        oauthClient = HaOAuthClient(
+            client = httpClient,
+            baseUrl = config.baseUrl,
+            clientId = (config.credentials as? HaCredentials.OAuthSession)?.oauthClientId
+                ?: "${config.baseUrl}/",
+        ),
         initialCredentials = config.credentials,
         onRefreshed = onCredentialsRefreshed,
     )

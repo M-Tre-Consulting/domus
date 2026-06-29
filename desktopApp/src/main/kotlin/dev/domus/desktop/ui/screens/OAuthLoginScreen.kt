@@ -73,12 +73,15 @@ fun OAuthLoginScreen(
             val port = server.localPort
             val localUri = "http://localhost:$port/"
 
-            // clientId uses the default ($baseUrl/) so it matches what HaSession passes
-            // to HaOAuthClient on every token refresh. HA allows any localhost redirect_uri
-            // regardless of client_id (RFC 8252 §7.3), so only the redirect needs to be local.
+            // Both client_id and redirect_uri must be localhost: HA validates that the
+            // redirect_uri is under the same origin as client_id (unless both are localhost).
+            // Using localUri for both satisfies HA's same-origin rule. The client_id is stored
+            // in credentials so HaSession uses the same value when refreshing the token —
+            // HA ties the grant to the original client_id and rejects a mismatched refresh.
             val oauthClient = HaOAuthClient(
                 client = httpClient,
                 baseUrl = baseUrl,
+                clientId = localUri,
                 redirectUri = localUri,
             )
 
@@ -133,6 +136,7 @@ fun OAuthLoginScreen(
                 accessToken = tokenResponse.accessToken,
                 refreshToken = refreshToken,
                 expiresAtEpochMillis = System.currentTimeMillis() + tokenResponse.expiresIn * 1000,
+                oauthClientId = localUri,
             )
             val session = HaSession(config, onCredentialsRefreshed)
             HaSessionHolder.connect(session)

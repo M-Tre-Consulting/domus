@@ -15,5 +15,6 @@ sealed interface HaCredentials {
         val accessToken: String,
         val refreshToken: String,
         val expiresAtEpochMillis: Long,
+        val oauthClientId: String? = null,
     ) : HaCredentials
 }

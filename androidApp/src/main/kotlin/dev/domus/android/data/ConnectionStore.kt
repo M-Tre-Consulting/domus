@@ -31,6 +31,7 @@ private val AUTH_TYPE_KEY = stringPreferencesKey("auth_type")
 private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
 private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
 private val EXPIRES_AT_KEY = longPreferencesKey("expires_at")
+private val OAUTH_CLIENT_ID_KEY = stringPreferencesKey("oauth_client_id")
 
 private const val AUTH_TYPE_TOKEN = "token"
 private const val AUTH_TYPE_OAUTH = "oauth"
@@ -94,7 +95,8 @@ class ConnectionStore(private val context: Context) {
                 val encryptedRefreshToken = prefs[REFRESH_TOKEN_KEY] ?: return@map null
                 val refreshToken = decrypt(encryptedRefreshToken) ?: return@map null
                 val expiresAt = prefs[EXPIRES_AT_KEY] ?: 0L
-                HaConnectionConfig.withOAuthSession(baseUrl, accessToken, refreshToken, expiresAt)
+                val oauthClientId = prefs[OAUTH_CLIENT_ID_KEY]
+                HaConnectionConfig.withOAuthSession(baseUrl, accessToken, refreshToken, expiresAt, oauthClientId)
             }
             else -> HaConnectionConfig.withToken(baseUrl, accessToken)
         }
@@ -115,6 +117,8 @@ class ConnectionStore(private val context: Context) {
                     prefs[ACCESS_TOKEN_KEY] = encrypt(credentials.accessToken)
                     prefs[REFRESH_TOKEN_KEY] = encrypt(credentials.refreshToken)
                     prefs[EXPIRES_AT_KEY] = credentials.expiresAtEpochMillis
+                    credentials.oauthClientId?.let { prefs[OAUTH_CLIENT_ID_KEY] = it }
+                        ?: prefs.remove(OAUTH_CLIENT_ID_KEY)
                 }
             }
         }

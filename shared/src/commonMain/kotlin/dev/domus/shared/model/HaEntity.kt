@@ -32,11 +32,16 @@ data class HaConnectionConfig(
         fun withToken(baseUrl: String, accessToken: String) =
             HaConnectionConfig(baseUrl.trim().trimEnd('/'), HaCredentials.LongLivedToken(accessToken.trim()))
 
-        fun withOAuthSession(baseUrl: String, accessToken: String, refreshToken: String, expiresAtEpochMillis: Long) =
-            HaConnectionConfig(
-                baseUrl.trim().trimEnd('/'),
-                HaCredentials.OAuthSession(accessToken, refreshToken, expiresAtEpochMillis),
-            )
+        fun withOAuthSession(
+            baseUrl: String,
+            accessToken: String,
+            refreshToken: String,
+            expiresAtEpochMillis: Long,
+            oauthClientId: String? = null,
+        ) = HaConnectionConfig(
+            baseUrl.trim().trimEnd('/'),
+            HaCredentials.OAuthSession(accessToken, refreshToken, expiresAtEpochMillis, oauthClientId),
+        )
     }
 }
 
