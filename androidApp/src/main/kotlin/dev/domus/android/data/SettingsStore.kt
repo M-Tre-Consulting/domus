@@ -3,6 +3,7 @@ package dev.domus.android.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,12 +17,14 @@ class SettingsStore(private val context: Context) {
         private val USE_HAPTIC_FEEDBACK_KEY = booleanPreferencesKey("use_haptic_feedback")
         private val GROUP_BY_ROOM_KEY = booleanPreferencesKey("group_by_room")
         private val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
+        private val REFRESH_INTERVAL_KEY = intPreferencesKey("refresh_interval_seconds")
     }
 
     val showDebugDiag: Flow<Boolean> = context.settingsDataStore.data.map { it[SHOW_DEBUG_DIAG_KEY] ?: true }
     val useHapticFeedback: Flow<Boolean> = context.settingsDataStore.data.map { it[USE_HAPTIC_FEEDBACK_KEY] ?: true }
     val groupByRoom: Flow<Boolean> = context.settingsDataStore.data.map { it[GROUP_BY_ROOM_KEY] ?: true }
     val keepScreenOn: Flow<Boolean> = context.settingsDataStore.data.map { it[KEEP_SCREEN_ON_KEY] ?: false }
+    val refreshIntervalSeconds: Flow<Int> = context.settingsDataStore.data.map { it[REFRESH_INTERVAL_KEY] ?: 10 }
 
     suspend fun setShowDebugDiag(show: Boolean) {
         context.settingsDataStore.edit { it[SHOW_DEBUG_DIAG_KEY] = show }
@@ -37,5 +40,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setKeepScreenOn(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEEP_SCREEN_ON_KEY] = enabled }
+    }
+
+    suspend fun setRefreshIntervalSeconds(seconds: Int) {
+        context.settingsDataStore.edit { it[REFRESH_INTERVAL_KEY] = seconds }
     }
 }

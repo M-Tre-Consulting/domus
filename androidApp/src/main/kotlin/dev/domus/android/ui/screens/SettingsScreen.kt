@@ -7,11 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -19,7 +24,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,6 +45,7 @@ fun SettingsScreen(
     val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
     val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
     val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
+    val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -85,6 +94,11 @@ fun SettingsScreen(
                 onCheckedChange = { scope.launch { settingsStore.setKeepScreenOn(it) } },
             )
 
+            RefreshIntervalDropdown(
+                currentSeconds = refreshIntervalSeconds,
+                onSelected = { scope.launch { settingsStore.setRefreshIntervalSeconds(it) } },
+            )
+
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.md.dp))
 
             Text(
@@ -100,6 +114,47 @@ fun SettingsScreen(
                 checked = showDebugDiag,
                 onCheckedChange = { scope.launch { settingsStore.setShowDebugDiag(it) } },
             )
+        }
+    }
+}
+
+private val REFRESH_INTERVALS = listOf(5, 10, 30, 60)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RefreshIntervalDropdown(currentSeconds: Int, onSelected: (Int) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = DesignTokens.Spacing.sm.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Detail Refresh Interval", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "How often detail screens poll for the latest sensor values.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = "${currentSeconds}s",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(0.35f),
+                singleLine = true,
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                REFRESH_INTERVALS.forEach { seconds ->
+                    DropdownMenuItem(
+                        text = { Text("${seconds}s") },
+                        onClick = { onSelected(seconds); expanded = false },
+                    )
+                }
+            }
         }
     }
 }

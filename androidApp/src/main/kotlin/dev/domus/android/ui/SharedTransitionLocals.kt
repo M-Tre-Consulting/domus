@@ -15,3 +15,6 @@ val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { nu
  * composable {} block that participates in shared element transitions.
  */
 val LocalAnimatedVisibilityScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
+
+/** How often detail screens poll for fresh entity state, in seconds. */
+val LocalRefreshIntervalSeconds = compositionLocalOf { 10 }

@@ -15,6 +15,9 @@ class SettingsStore {
     private val _groupByRoom = MutableStateFlow(PREFS.getBoolean("group_by_room", true))
     val groupByRoom: StateFlow<Boolean> = _groupByRoom.asStateFlow()
 
+    private val _refreshIntervalSeconds = MutableStateFlow(PREFS.getInt("refresh_interval_seconds", 10))
+    val refreshIntervalSeconds: StateFlow<Int> = _refreshIntervalSeconds.asStateFlow()
+
     fun setShowDebugDiag(show: Boolean) {
         PREFS.putBoolean("show_debug_diag", show); PREFS.flush()
         _showDebugDiag.value = show
@@ -23,5 +26,10 @@ class SettingsStore {
     fun setGroupByRoom(enabled: Boolean) {
         PREFS.putBoolean("group_by_room", enabled); PREFS.flush()
         _groupByRoom.value = enabled
+    }
+
+    fun setRefreshIntervalSeconds(seconds: Int) {
+        PREFS.putInt("refresh_interval_seconds", seconds); PREFS.flush()
+        _refreshIntervalSeconds.value = seconds
     }
 }

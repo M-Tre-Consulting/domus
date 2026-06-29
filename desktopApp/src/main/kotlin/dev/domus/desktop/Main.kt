@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import dev.domus.desktop.ui.LocalRefreshIntervalSeconds
 import dev.domus.desktop.data.ConnectionStore
 import dev.domus.desktop.data.FavoritesStore
 import dev.domus.desktop.data.HaSessionHolder
@@ -71,6 +73,7 @@ private fun App() {
     val favoritesStore = remember { FavoritesStore() }
     val settingsStore = remember { SettingsStore() }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState()
+    val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState()
 
     fun persistRefreshed(baseUrl: String): suspend (HaCredentials.OAuthSession) -> Unit = { refreshed ->
         connectionStore.save(HaConnectionConfig(baseUrl, refreshed))
@@ -83,6 +86,7 @@ private fun App() {
     fun pop() { if (screenStack.size > 1) screenStack = screenStack.dropLast(1) }
     fun replaceAll(screen: Screen) { screenStack = listOf(screen) }
 
+    CompositionLocalProvider(LocalRefreshIntervalSeconds provides refreshIntervalSeconds) {
     Crossfade(targetState = currentScreen, label = "nav") { screen ->
         when (screen) {
             Screen.Splash -> SplashScreen(connectionStore = connectionStore, onNavigate = ::replaceAll)
@@ -188,6 +192,7 @@ private fun App() {
             }
         }
     }
+    } // CompositionLocalProvider(LocalRefreshIntervalSeconds)
 }
 
 @Composable

@@ -33,6 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.domus.android.ui.LocalAnimatedVisibilityScope
+import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import dev.domus.android.ui.LocalSharedTransitionScope
 import dev.domus.android.data.ConnectionStore
 import dev.domus.android.data.FavoritesStore
@@ -114,12 +115,14 @@ private fun DomusNavHost() {
     val onboardingStore = remember { OnboardingStore(context.applicationContext) }
     val settingsStore = remember { SettingsStore(context.applicationContext) }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState(initial = emptySet())
+    val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
     val scope = rememberCoroutineScope()
 
     fun persistRefreshed(baseUrl: String): suspend (HaCredentials.OAuthSession) -> Unit = { refreshed ->
         connectionStore.save(HaConnectionConfig(baseUrl, refreshed))
     }
 
+    CompositionLocalProvider(LocalRefreshIntervalSeconds provides refreshIntervalSeconds) {
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(
@@ -357,4 +360,5 @@ private fun DomusNavHost() {
     }
     } // CompositionLocalProvider(LocalSharedTransitionScope)
     } // SharedTransitionLayout
+    } // CompositionLocalProvider(LocalRefreshIntervalSeconds)
 }
