@@ -40,9 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +68,7 @@ import dev.domus.shared.model.supportedColorModes
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import dev.domus.desktop.ui.LocalRefreshIntervalSeconds
 import kotlin.math.abs
 
 private val COLOR_MODES_WITH_BRIGHTNESS = setOf("brightness", "color_temp", "hs", "rgb", "rgbw", "rgbww", "xy", "white")
@@ -94,6 +97,14 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         scope.launch {

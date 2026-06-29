@@ -37,8 +37,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -55,6 +57,7 @@ import dev.domus.shared.model.HaServiceCall
 import dev.domus.shared.model.changedBy
 import dev.domus.shared.model.friendlyName
 import kotlinx.coroutines.launch
+import dev.domus.desktop.ui.LocalRefreshIntervalSeconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +66,14 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(service: String) {
         scope.launch {

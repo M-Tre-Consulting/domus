@@ -82,6 +82,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import dev.domus.desktop.ui.LocalRefreshIntervalSeconds
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -92,6 +93,14 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val refreshInterval = LocalRefreshIntervalSeconds.current
+
+    LaunchedEffect(entityId, refreshInterval) {
+        while (true) {
+            delay(refreshInterval.toLong() * 1000L)
+            try { session.repository.refreshEntities(setOf(entityId)) } catch (_: Exception) {}
+        }
+    }
 
     fun callService(call: HaServiceCall) {
         scope.launch {
