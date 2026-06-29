@@ -1,7 +1,6 @@
 package dev.domus.desktop
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -40,7 +39,7 @@ fun appIconBitmap(size: Int): ImageBitmap {
     val dh = s * 0.24f
     val dx = s / 2 - dw / 2
     val dy = s * 0.82f - dh
-    canvas.drawRoundRect(Rect(dx, dy, dx + dw, dy + dh), s * 0.04f, s * 0.04f, paint(blue))
+    canvas.drawRoundRect(dx, dy, dx + dw, dy + dh, s * 0.04f, s * 0.04f, paint(blue))
 
     return bmp
 }
