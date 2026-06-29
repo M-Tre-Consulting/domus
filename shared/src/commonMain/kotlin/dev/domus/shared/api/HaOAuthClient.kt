@@ -34,9 +34,9 @@ class HaOAuthException(message: String) : Exception(message)
 class HaOAuthClient(
     private val client: HttpClient,
     val baseUrl: String,
+    val clientId: String = "$baseUrl/",
+    val redirectUri: String = "$baseUrl/auth/external/callback",
 ) {
-    val clientId: String = "$baseUrl/"
-    val redirectUri: String = "$baseUrl/auth/external/callback"
 
     fun authorizeUrl(): String {
         val builder = URLBuilder("$baseUrl/auth/authorize")

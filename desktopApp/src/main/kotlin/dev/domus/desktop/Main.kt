@@ -30,11 +30,13 @@ import dev.domus.desktop.ui.screens.EntityPickerScreen
 import dev.domus.desktop.ui.screens.LightDetailScreen
 import dev.domus.desktop.ui.screens.LockDetailScreen
 import dev.domus.desktop.ui.screens.MediaPlayerDetailScreen
+import dev.domus.desktop.ui.screens.OAuthLoginScreen
 import dev.domus.desktop.ui.screens.SettingsScreen
 import dev.domus.desktop.ui.screens.SwitchDetailScreen
 import dev.domus.shared.api.HaApiException
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaConnectionConfig
+import dev.domus.shared.model.HaCredentials
 
 // --- Navigation model ---
 
@@ -44,6 +46,7 @@ private sealed interface Screen {
     data object Dashboard : Screen
     data object Picker : Screen
     data object Settings : Screen
+    data class OAuthLogin(val baseUrl: String) : Screen
     data class ClimateDetail(val entityId: String) : Screen
     data class LightDetail(val entityId: String) : Screen
     data class SwitchDetail(val entityId: String) : Screen
@@ -69,6 +72,10 @@ private fun App() {
     val settingsStore = remember { SettingsStore() }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState()
 
+    fun persistRefreshed(baseUrl: String): suspend (HaCredentials.OAuthSession) -> Unit = { refreshed ->
+        connectionStore.save(HaConnectionConfig(baseUrl, refreshed))
+    }
+
     var screenStack by remember { mutableStateOf(listOf<Screen>(Screen.Splash)) }
     val currentScreen = screenStack.last()
 
@@ -81,12 +88,23 @@ private fun App() {
             Screen.Splash -> SplashScreen(connectionStore = connectionStore, onNavigate = ::replaceAll)
 
             Screen.Connect -> ConnectScreen(
+                // Token path: ConnectScreen creates the session itself, just persist + navigate.
                 onConnected = { config ->
                     connectionStore.save(config)
-                    val session = HaSession(config)
-                    HaSessionHolder.connect(session)
                     replaceAll(Screen.Dashboard)
                 },
+                onLoginWithBrowser = { baseUrl -> push(Screen.OAuthLogin(baseUrl)) },
+            )
+
+            is Screen.OAuthLogin -> OAuthLoginScreen(
+                baseUrl = screen.baseUrl,
+                // OAuthLoginScreen creates the session itself with the refresh callback.
+                onConnected = { config ->
+                    connectionStore.save(config)
+                    replaceAll(Screen.Dashboard)
+                },
+                onCredentialsRefreshed = persistRefreshed(screen.baseUrl),
+                onBack = ::pop,
             )
 
             Screen.Dashboard -> {
@@ -177,7 +195,7 @@ private fun SplashScreen(connectionStore: ConnectionStore, onNavigate: (Screen) 
     LaunchedEffect(Unit) {
         val savedConfig = connectionStore.read()
         val reconnected: HaSession? = savedConfig?.let { config ->
-            val session = HaSession(config)
+            val session = HaSession(config) { refreshed -> connectionStore.save(HaConnectionConfig(config.baseUrl, refreshed)) }
             try {
                 session.restApi.checkConnection()
                 session
