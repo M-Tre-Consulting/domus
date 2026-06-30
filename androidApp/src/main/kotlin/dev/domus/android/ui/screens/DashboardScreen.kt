@@ -1,7 +1,16 @@
 package dev.domus.android.ui.screens
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +22,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -93,6 +105,7 @@ import dev.domus.shared.model.temperatureUnit
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.DisposableEffect
@@ -153,6 +166,7 @@ fun DashboardScreen(
     val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
     val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
     val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
+    val dashboardLayout by settingsStore.dashboardLayout.collectAsState(initial = "grid2")
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -335,37 +349,51 @@ fun DashboardScreen(
                         CircularProgressIndicator()
                     }
 
-                    else -> LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
-                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
-                        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
-                    ) {
-                        groupedEntities.forEach { (label, entitiesInGroup) ->
-                            item(key = "header_$label", span = { GridItemSpan(maxLineSpan) }) {
-                                DomainHeader(label)
-                            }
-                            items(
-                                entitiesInGroup,
-                                key = { it.entityId },
-                                span = { entity ->
-                                    if (entity.domain in TILE_DOMAINS) GridItemSpan(1) else GridItemSpan(maxLineSpan)
-                                },
-                            ) { entity ->
-                                if (entity.domain in TILE_DOMAINS) {
-                                    EntityTile(entity = entity, onCallService = ::callService)
-                                } else {
-                                    EntityCard(
-                                        entity = entity,
-                                        onCallService = ::callService,
-                                        onOpenDetail = when (entity.domain) {
-                                            "climate", "water_heater", "light", "switch", "media_player", "lock" -> {
-                                                { onOpenDetail(entity.entityId) }
-                                            }
-                                            else -> null
-                                        },
-                                    )
+                    else -> {
+                        val columns = when (dashboardLayout) { "list" -> 1; "grid4" -> 4; else -> 2 }
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(columns),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(DesignTokens.Spacing.md.dp),
+                            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
+                            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
+                        ) {
+                            groupedEntities.forEach { (label, entitiesInGroup) ->
+                                item(key = "header_$label", span = { GridItemSpan(maxLineSpan) }) {
+                                    DomainHeader(label)
+                                }
+                                items(
+                                    entitiesInGroup,
+                                    key = { it.entityId },
+                                    span = { entity ->
+                                        // list (1 col): everything full-width
+                                        // grid2 (2 col): tiles=1, cards=2 (full-width)
+                                        // grid4 (4 col): tiles=1, cards=2 (half-width)
+                                        val isTile = entity.domain in TILE_DOMAINS
+                                        when {
+                                            dashboardLayout == "list" -> GridItemSpan(maxLineSpan)
+                                            isTile -> GridItemSpan(1)
+                                            dashboardLayout == "grid4" -> GridItemSpan(2)
+                                            else -> GridItemSpan(maxLineSpan)
+                                        }
+                                    },
+                                ) { entity ->
+                                    val isTile = entity.domain in TILE_DOMAINS
+                                    if (isTile && dashboardLayout != "list") {
+                                        EntityTile(entity = entity, onCallService = ::callService)
+                                    } else {
+                                        EntityCard(
+                                            entity = entity,
+                                            onCallService = ::callService,
+                                            compact = dashboardLayout == "grid4",
+                                            onOpenDetail = when (entity.domain) {
+                                                "climate", "water_heater", "light", "switch", "media_player", "lock" -> {
+                                                    { onOpenDetail(entity.entityId) }
+                                                }
+                                                else -> null
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -442,15 +470,13 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
     val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
         (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
 
+    val targetColor = if (isActive) MaterialTheme.colorScheme.primaryContainer
+                      else MaterialTheme.colorScheme.surfaceContainerHigh
+    val containerColor by animateColorAsState(targetColor, tween(300), label = "tileColor")
+
     Card(
         shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            },
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp)) {
@@ -483,13 +509,15 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = DesignTokens.Spacing.sm.dp),
             )
-            Text(
-                text = entity.state.toDisplayLabel(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Crossfade(targetState = entity.state.toDisplayLabel(), label = "tileState") { label ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -499,11 +527,27 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
 private fun EntityCard(
     entity: HaEntityState,
     onCallService: (HaServiceCall) -> Unit,
+    compact: Boolean = false,
     onOpenDetail: (() -> Unit)? = null,
 ) {
     val isActive = isActiveState(entity.domain, entity.state)
     val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
         (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
+
+    // Domain-specific container color: locks use error surface when unlocked.
+    val targetContainerColor = when {
+        entity.domain == "lock" && entity.state.equals("unlocked", ignoreCase = true) ->
+            MaterialTheme.colorScheme.errorContainer
+        entity.domain == "lock" && entity.state.equals("locked", ignoreCase = true) ->
+            MaterialTheme.colorScheme.primaryContainer
+        isActive -> {
+            val lightColor = lightBadgeColor(entity)
+            if (lightColor != null) lightColor.copy(alpha = 0.18f).compositeOver(MaterialTheme.colorScheme.surface)
+            else MaterialTheme.colorScheme.primaryContainer
+        }
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val containerColor by animateColorAsState(targetContainerColor, tween(350, easing = FastOutSlowInEasing), label = "cardColor")
 
     val cardModifier = if (onOpenDetail != null) {
         Modifier.fillMaxWidth().clickable(onClick = onOpenDetail)
@@ -513,13 +557,7 @@ private fun EntityCard(
 
     Card(
         shape = RoundedCornerShape(DesignTokens.Shape.cornerMedium.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            },
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = cardModifier,
     ) {
         Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp).animateContentSize()) {
@@ -530,7 +568,11 @@ private fun EntityCard(
                 EntityIconBadge(
                     domain = entity.domain,
                     isActive = isActive,
-                    overrideColor = lightBadgeColor(entity),
+                    overrideColor = when {
+                        entity.domain == "lock" && entity.state.equals("unlocked", ignoreCase = true) ->
+                            MaterialTheme.colorScheme.error
+                        else -> lightBadgeColor(entity)
+                    },
                     sharedKey = "hero_${entity.entityId}",
                 )
                 Column(
@@ -538,14 +580,25 @@ private fun EntityCard(
                         .weight(1f)
                         .padding(horizontal = DesignTokens.Spacing.md.dp),
                 ) {
-                    Text(text = entity.friendlyName, style = MaterialTheme.typography.titleSmall)
-                    Text(text = entity.state.toDisplayLabel(), style = MaterialTheme.typography.bodyMedium)
+                    Text(text = entity.friendlyName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Crossfade(targetState = entity.state.toDisplayLabel(), label = "cardState") { label ->
+                        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+                    }
                     if (entity.domain == "switch") {
                         entity.currentPowerW?.let { power ->
                             Text(
                                 text = "%.1f W".format(power),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                    if (entity.domain == "climate" || entity.domain == "water_heater") {
+                        entity.currentTemperature?.let { temp ->
+                            Text(
+                                text = "Now ${"%.1f".format(temp)}${entity.temperatureUnit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -562,60 +615,50 @@ private fun EntityCard(
                 }
             }
 
-            if (entity.domain == "light" && entity.state.equals("on", ignoreCase = true)) {
-                BrightnessSlider(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "fan" && entity.state.equals("on", ignoreCase = true)) {
-                FanSpeedSlider(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "climate" || entity.domain == "water_heater") {
-                TemperatureControls(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "media_player") {
-                MediaPlayerControls(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "cover") {
-                OpenCloseControls(entity = entity, domain = "cover", onCallService = onCallService)
-            }
-
-            if (entity.domain == "valve") {
-                OpenCloseControls(entity = entity, domain = "valve", onCallService = onCallService)
-            }
-
-            if (entity.domain == "lock") {
-                LockControls(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "vacuum") {
-                VacuumControls(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "lawn_mower") {
-                LawnMowerControls(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "scene") {
-                ActionButton(entity = entity, label = "Activate", domain = "scene", service = "turn_on", onCallService = onCallService)
-            }
-
-            if (entity.domain == "script") {
-                ActionButton(entity = entity, label = "Run", domain = "script", service = "turn_on", onCallService = onCallService)
-            }
-
-            if (entity.domain == "button") {
-                ActionButton(entity = entity, label = "Press", domain = "button", service = "press", onCallService = onCallService)
-            }
-
-            if (entity.domain == "number" || entity.domain == "input_number") {
-                NumberSlider(entity = entity, onCallService = onCallService)
-            }
-
-            if (entity.domain == "select" || entity.domain == "input_select") {
-                SelectDropdown(entity = entity, onCallService = onCallService)
+            // Inline controls are hidden in compact (grid4) mode — tap card to open detail.
+            if (!compact) {
+                if (entity.domain == "light" && entity.state.equals("on", ignoreCase = true)) {
+                    BrightnessSlider(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "fan" && entity.state.equals("on", ignoreCase = true)) {
+                    FanSpeedSlider(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "climate" || entity.domain == "water_heater") {
+                    TemperatureControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "media_player") {
+                    MediaPlayerControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "cover") {
+                    OpenCloseControls(entity = entity, domain = "cover", onCallService = onCallService)
+                }
+                if (entity.domain == "valve") {
+                    OpenCloseControls(entity = entity, domain = "valve", onCallService = onCallService)
+                }
+                if (entity.domain == "lock") {
+                    LockControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "vacuum") {
+                    VacuumControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "lawn_mower") {
+                    LawnMowerControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "scene") {
+                    ActionButton(entity = entity, label = "Activate", domain = "scene", service = "turn_on", onCallService = onCallService)
+                }
+                if (entity.domain == "script") {
+                    ActionButton(entity = entity, label = "Run", domain = "script", service = "turn_on", onCallService = onCallService)
+                }
+                if (entity.domain == "button") {
+                    ActionButton(entity = entity, label = "Press", domain = "button", service = "press", onCallService = onCallService)
+                }
+                if (entity.domain == "number" || entity.domain == "input_number") {
+                    NumberSlider(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "select" || entity.domain == "input_select") {
+                    SelectDropdown(entity = entity, onCallService = onCallService)
+                }
             }
         }
     }
@@ -903,6 +946,7 @@ private fun MediaPlayerControls(entity: HaEntityState, onCallService: (HaService
     val title = entity.mediaTitle
     val artist = entity.mediaArtist
     val isPlaying = entity.state.equals("playing", ignoreCase = true)
+    val canControl = isPlaying || entity.state.equals("paused", ignoreCase = true)
 
     Row(
         modifier = Modifier
@@ -910,29 +954,54 @@ private fun MediaPlayerControls(entity: HaEntityState, onCallService: (HaService
             .padding(top = DesignTokens.Spacing.sm.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (isPlaying) {
+            EqualizerBars(color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             if (title != null) {
-                Text(text = title, style = MaterialTheme.typography.bodyMedium)
+                Text(text = title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (artist != null) {
-                Text(text = artist, style = MaterialTheme.typography.bodySmall)
+                Text(text = artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        if (entity.state.equals("playing", ignoreCase = true) || entity.state.equals("paused", ignoreCase = true)) {
+        if (canControl) {
             IconButton(onClick = {
-                onCallService(
-                    HaServiceCall(
-                        domain = "media_player",
-                        service = "media_play_pause",
-                        entityId = entity.entityId,
-                    ),
-                )
+                onCallService(HaServiceCall(domain = "media_player", service = "media_play_pause", entityId = entity.entityId))
             }) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
                 )
             }
+        }
+    }
+}
+
+/** Three animated bars that pulse independently to indicate audio playback. */
+@Composable
+private fun EqualizerBars(color: Color, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "eq")
+    val delays = listOf(0, 150, 75)
+    val heights = delays.map { delay ->
+        transition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(450, delayMillis = delay, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "bar$delay",
+        )
+    }
+    Row(modifier = modifier, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        heights.forEach { heightFraction ->
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height((14.dp.value * heightFraction.value).dp)
+                    .background(color, shape = RoundedCornerShape(1.dp)),
+            )
         }
     }
 }
