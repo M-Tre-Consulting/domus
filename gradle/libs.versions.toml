@@ -15,6 +15,7 @@ androidDesugar = "2.1.5"
 material3 = "1.9.0"
 materialIconsExtended = "1.7.3"
 navigationCompose = "2.9.8"
+materialKolor = "2.0.0"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -44,6 +45,7 @@ android-desugar-jdklibs = { module = "com.android.tools:desugar_jdk_libs", versi
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
