@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -64,10 +66,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val settingsStore = SettingsStore(applicationContext)
         setContent {
-            DomusTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    DomusNavHost()
+            val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
+            val seedColorArgb by settingsStore.seedColorArgb.collectAsState(initial = 0)
+            val uiDensity by settingsStore.uiDensity.collectAsState(initial = "comfortable")
+
+            DomusTheme(themeMode = themeMode, seedColorArgb = seedColorArgb) {
+                val densityMultiplier = when (uiDensity) {
+                    "compact" -> 0.85f
+                    "spacious" -> 1.15f
+                    else -> 1.0f
+                }
+                val base = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(base.density * densityMultiplier, base.fontScale),
+                ) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        DomusNavHost()
+                    }
                 }
             }
         }
