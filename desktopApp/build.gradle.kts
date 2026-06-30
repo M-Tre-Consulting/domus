@@ -28,6 +28,8 @@ compose.desktop {
 
             windows {
                 iconFile.set(project.file("icons/icon.ico"))
+                menuGroup = "Domus"
+                shortcut = true
             }
             linux {
                 iconFile.set(project.file("icons/icon.png"))
