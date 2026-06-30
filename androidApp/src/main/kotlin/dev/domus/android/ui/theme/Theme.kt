@@ -32,7 +32,7 @@ fun DomusTheme(
 
     val context = LocalContext.current
     val colorScheme = if (seedColorArgb != 0) {
-        rememberDynamicColorScheme(seedColor = Color(seedColorArgb), isDark = isDark)
+        rememberDynamicColorScheme(Color(seedColorArgb), isDark, isAmoled = false)
     } else {
         if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     }
