@@ -8,6 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -160,10 +163,20 @@ private fun DomusNavHost() {
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH,
-        enterTransition = { slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn() },
-        exitTransition = { fadeOut() },
-        popEnterTransition = { fadeIn() },
-        popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() },
+        enterTransition = {
+            slideInHorizontally(
+                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+                initialOffsetX = { it / 4 },
+            ) + fadeIn(tween(220))
+        },
+        exitTransition = { fadeOut(tween(150)) },
+        popEnterTransition = { fadeIn(tween(220)) },
+        popExitTransition = {
+            slideOutHorizontally(
+                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+                targetOffsetX = { it / 4 },
+            ) + fadeOut(tween(150))
+        },
     ) {
         composable(Routes.SPLASH) {
             LaunchedEffect(Unit) {

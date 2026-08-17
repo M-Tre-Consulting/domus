@@ -35,6 +35,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -81,6 +83,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.android.R
@@ -339,22 +343,43 @@ fun DashboardScreen(
 
             Crossfade(targetState = uiState, label = "dashboard-state") { state ->
                 when (state) {
-                    "error" -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(text = errorMessage.orEmpty(), color = MaterialTheme.colorScheme.error)
-                    }
-
-                    "empty" -> Column(
-                        modifier = Modifier.fillMaxSize(),
+                    "error" -> Column(
+                        modifier = Modifier.fillMaxSize().padding(DesignTokens.Spacing.lg.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(text = stringResource(R.string.dashboard_empty_title))
+                        IconBadgeCircle(
+                            icon = Icons.Filled.CloudOff,
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Text(
+                            text = errorMessage.orEmpty(),
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+                        )
+                    }
+
+                    "empty" -> Column(
+                        modifier = Modifier.fillMaxSize().padding(DesignTokens.Spacing.lg.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        IconBadgeCircle(
+                            icon = Icons.Filled.Dashboard,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.dashboard_empty_title),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+                        )
                         Button(
                             onClick = onEditEntities,
-                            modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
+                            modifier = Modifier.padding(top = DesignTokens.Spacing.lg.dp),
                         ) {
                             Text(stringResource(R.string.common_choose_entities))
                         }
@@ -364,7 +389,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(modifier = Modifier.size(36.dp), strokeWidth = 3.dp)
                     }
 
                     else -> {
@@ -420,6 +445,19 @@ fun DashboardScreen(
             }
         }
         } // Column
+    }
+}
+
+@Composable
+private fun IconBadgeCircle(
+    icon: ImageVector,
+    containerColor: Color,
+    contentColor: Color,
+) {
+    Surface(shape = CircleShape, color = containerColor, modifier = Modifier.size(72.dp)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(imageVector = icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(36.dp))
+        }
     }
 }
 
