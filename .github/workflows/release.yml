@@ -74,9 +74,8 @@ jobs:
         run: |
           response=$(curl -s "https://api.foojay.io/disco/v3.0/packages?jdk_version=21&distribution=jetbrains&architecture=x64&operating_system=windows&package_type=jdk&release_status=ga&latest=per_distro")
           url=$(echo "$response" | jq -r '.result[0].links.pkg_download_redirect // empty')
-          archive_type=$(echo "$response" | jq -r '.result[0].archive_type // empty')
           filename=$(echo "$response" | jq -r '.result[0].filename // empty')
-          echo "Resolved JBR package: filename=$filename archive_type=$archive_type"
+          echo "Resolved JBR package: filename=$filename"
           if [ -z "$url" ]; then
             echo "JBR 21 not found for windows/x64. Full API response:"
             echo "$response"
@@ -95,20 +94,13 @@ jobs:
 
           extract_dir="$RUNNER_TEMP/jbr_extract"
           mkdir -p "$extract_dir"
-          case "$archive_type" in
-            zip)
-              powershell -NoProfile -Command "Expand-Archive -Path '$archive' -DestinationPath '$extract_dir' -Force"
-              ;;
-            tar.gz|tgz|targz)
-              # --force-local: without it, GNU tar treats the "D:" in a Windows drive-letter
-              # path as a remote "host:path" and tries to rsh into a machine named "D".
-              tar --force-local -xzf "$archive" -C "$extract_dir"
-              ;;
-            *)
-              echo "Unrecognized archive_type '$archive_type', trying tar as a fallback"
-              tar --force-local -xf "$archive" -C "$extract_dir"
-              ;;
-          esac
+          # Bare `tar` on a bash step resolves to Git Bash's own bundled GNU tar, which is
+          # POSIX-path-minded: it mishandles Windows drive-letter paths (treats "D:" as a
+          # remote "host:path" and, even with --force-local, still mangles the path). Calling
+          # the OS's own tar.exe (System32, bsdtar-based, shipped since Windows 10) sidesteps
+          # all of that — it understands native Windows paths and auto-detects zip vs tar.gz,
+          # so there's no archive_type branching or PowerShell needed either.
+          /c/Windows/System32/tar.exe -xf "$archive" -C "$extract_dir"
 
           inner=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -1)
           [ -n "$inner" ] || { echo "JBR archive layout unexpected"; find "$extract_dir"; exit 1; }
