@@ -69,11 +69,20 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'jetbrains'
-          java-version: '21'
+      - name: Install JetBrains JDK 21
+        shell: bash
+        run: |
+          url=$(curl -s "https://api.foojay.io/disco/v3.0/packages?jdk_version=21&distribution=jetbrains&architecture=x64&operating_system=windows&package_type=jdk&release_status=ga&latest=per_distro" | \
+            jq -r '.result[0].links.pkg_download_redirect // empty')
+          [ -n "$url" ] || { echo "JBR 21 not found"; exit 1; }
+          archive="$RUNNER_TEMP/jbr.zip"
+          extract_dir="$RUNNER_TEMP/jbr_extract"
+          curl -sL "$url" -o "$archive"
+          powershell -NoProfile -Command "Expand-Archive -Path '$archive' -DestinationPath '$extract_dir' -Force"
+          inner=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -1)
+          [ -n "$inner" ] || { echo "JBR archive layout unexpected"; find "$extract_dir"; exit 1; }
+          echo "JAVA_HOME=$inner" >> "$GITHUB_ENV"
+          echo "$inner/bin" >> "$GITHUB_PATH"
 
       - name: Set version from tag
         shell: bash
@@ -99,11 +108,16 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'jetbrains'
-          java-version: '21'
+      - name: Install JetBrains JDK 21
+        run: |
+          url=$(curl -s "https://api.foojay.io/disco/v3.0/packages?jdk_version=21&distribution=jetbrains&architecture=x64&operating_system=linux&package_type=jdk&release_status=ga&latest=per_distro" | \
+            jq -r '.result[0].links.pkg_download_redirect // empty')
+          [ -n "$url" ] || { echo "JBR 21 not found"; exit 1; }
+          curl -sL "$url" -o /tmp/jbr.tar.gz
+          mkdir -p "$HOME/.jbr"
+          tar -xzf /tmp/jbr.tar.gz -C "$HOME/.jbr" --strip-components=1
+          echo "JAVA_HOME=$HOME/.jbr" >> "$GITHUB_ENV"
+          echo "$HOME/.jbr/bin" >> "$GITHUB_PATH"
 
       - name: Set version from tag
         run: |
