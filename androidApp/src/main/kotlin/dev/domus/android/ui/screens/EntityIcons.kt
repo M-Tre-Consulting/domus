@@ -27,9 +27,14 @@ import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Grain
+import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonPin
+import androidx.compose.material.icons.filled.Umbrella
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -104,6 +109,20 @@ fun domainLabelRes(domain: String): Int? = DOMAIN_LABEL_RES[domain]
 fun domainLabel(domain: String): String =
     domainLabelRes(domain)?.let { stringResource(it) }
         ?: domain.replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+/** Icon per HA weather `condition` state, e.g. "partlycloudy" -> a cloud-and-sun glyph. */
+fun iconForWeatherCondition(condition: String): ImageVector = when (condition.lowercase()) {
+    "sunny" -> Icons.Filled.WbSunny
+    "clear-night" -> Icons.Filled.NightsStay
+    "cloudy", "partlycloudy" -> Icons.Filled.Cloud
+    "fog" -> Icons.Filled.BlurOn
+    "hail", "snowy-rainy" -> Icons.Filled.Grain
+    "lightning", "lightning-rainy" -> Icons.Filled.Bolt
+    "pouring", "rainy" -> Icons.Filled.Umbrella
+    "snowy" -> Icons.Filled.AcUnit
+    "windy", "windy-variant" -> Icons.Filled.Air
+    else -> Icons.Filled.Cloud
+}
 
 /** Icon per HVAC mode, matching the convention most HA thermostat cards use. */
 fun iconForHvacMode(mode: String): ImageVector = when (mode.lowercase()) {

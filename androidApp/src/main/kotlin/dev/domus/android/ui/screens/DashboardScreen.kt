@@ -430,7 +430,14 @@ fun DashboardScreen(
                                 ) { entity ->
                                     val isTile = entity.domain in TILE_DOMAINS
                                     if (isTile && dashboardLayout != "list") {
-                                        EntityTile(entity = entity, onCallService = ::callService)
+                                        EntityTile(
+                                            entity = entity,
+                                            onCallService = ::callService,
+                                            onOpenDetail = when (entity.domain) {
+                                                "weather" -> { { onOpenDetail(entity.entityId) } }
+                                                else -> null
+                                            },
+                                        )
                                     } else {
                                         EntityCard(
                                             entity = entity,
@@ -544,7 +551,11 @@ internal fun EntityIconBadge(
 
 /** Compact half-width card for simple on/off entities and read-only sensors. */
 @Composable
-private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
+private fun EntityTile(
+    entity: HaEntityState,
+    onCallService: (HaServiceCall) -> Unit,
+    onOpenDetail: (() -> Unit)? = null,
+) {
     val isActive = isActiveState(entity.domain, entity.state)
     val isToggleable = entity.domain in TOGGLEABLE_DOMAINS &&
         (entity.state.equals("on", ignoreCase = true) || entity.state.equals("off", ignoreCase = true))
@@ -553,10 +564,16 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
                       else MaterialTheme.colorScheme.surfaceContainerHigh
     val containerColor by animateColorAsState(targetColor, tween(300), label = "tileColor")
 
+    val tileModifier = if (onOpenDetail != null) {
+        Modifier.fillMaxWidth().pressScaleClickable(onClick = onOpenDetail)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
     Card(
         shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = tileModifier,
     ) {
         Column(modifier = Modifier.padding(DesignTokens.Spacing.md.dp)) {
             Row(

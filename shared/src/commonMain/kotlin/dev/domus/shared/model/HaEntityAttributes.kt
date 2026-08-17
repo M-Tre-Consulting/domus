@@ -89,6 +89,27 @@ val HaEntityState.weatherTemperature: Double?
 val HaEntityState.weatherHumidity: Double?
     get() = (attribute("humidity") as? JsonPrimitive)?.doubleOrNull
 
+val HaEntityState.weatherWindSpeed: Double?
+    get() = (attribute("wind_speed") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.weatherWindSpeedUnit: String?
+    get() = (attribute("wind_speed_unit") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.weatherWindBearing: Double?
+    get() = (attribute("wind_bearing") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.weatherPressure: Double?
+    get() = (attribute("pressure") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.weatherPressureUnit: String?
+    get() = (attribute("pressure_unit") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.weatherTemperatureUnit: String?
+    get() = (attribute("temperature_unit") as? JsonPrimitive)?.contentOrNull
+
+val HaEntityState.weatherAttribution: String?
+    get() = (attribute("attribution") as? JsonPrimitive)?.contentOrNull
+
 val HaEntityState.minTemp: Double
     get() = (attribute("min_temp") as? JsonPrimitive)?.doubleOrNull ?: 7.0
 

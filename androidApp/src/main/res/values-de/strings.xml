@@ -272,4 +272,8 @@
     <string name="domain_weather">Wetter</string>
     <string name="domain_person">Personen</string>
     <string name="domain_device_tracker">Anwesenheit</string>
+
+    <!-- Weather detail -->
+    <string name="weather_wind">Wind</string>
+    <string name="weather_pressure">Luftdruck</string>
 </resources>

@@ -57,6 +57,7 @@ import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.screens.SettingsScreen
 import dev.domus.android.ui.screens.SplashScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
+import dev.domus.android.ui.screens.WeatherDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.android.widget.DomusWidget
 import dev.domus.shared.api.HaApiException
@@ -115,6 +116,7 @@ object Routes {
     const val MEDIA_PLAYER_DETAIL = "media_player_detail"
     const val LOCK_DETAIL = "lock_detail"
     const val CAMERA_DETAIL = "camera_detail"
+    const val WEATHER_DETAIL = "weather_detail"
     const val ENTITY_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
@@ -338,6 +340,7 @@ private fun DomusNavHost() {
                                 "media_player" -> navController.navigate("${Routes.MEDIA_PLAYER_DETAIL}/$entityId")
                                 "lock" -> navController.navigate("${Routes.LOCK_DETAIL}/$entityId")
                                 "camera" -> navController.navigate("${Routes.CAMERA_DETAIL}/$entityId")
+                                "weather" -> navController.navigate("${Routes.WEATHER_DETAIL}/$entityId")
                                 else -> {}
                             }
                         },
@@ -431,6 +434,20 @@ private fun DomusNavHost() {
                 }
             } else {
                 CameraDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+            }
+        }
+        composable(
+            route = "${Routes.WEATHER_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.WEATHER_DETAIL) { inclusive = true } }
+                }
+            } else {
+                WeatherDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {
