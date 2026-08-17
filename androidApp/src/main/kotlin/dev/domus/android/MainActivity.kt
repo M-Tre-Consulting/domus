@@ -3,7 +3,6 @@ package dev.domus.android
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,11 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.domus.android.ui.AppLockGate
 import dev.domus.android.ui.LocalAnimatedVisibilityScope
 import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import dev.domus.android.ui.LocalSharedTransitionScope
@@ -67,7 +68,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -87,8 +88,10 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalDensity provides Density(base.density * densityMultiplier, base.fontScale),
                 ) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        DomusNavHost()
+                    AppLockGate(settingsStore = settingsStore, activity = this@MainActivity) {
+                        Surface(modifier = Modifier.fillMaxSize()) {
+                            DomusNavHost()
+                        }
                     }
                 }
             }

@@ -88,6 +88,7 @@ fun SettingsScreen(
     val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
     val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
     val keepConnectionAlive by settingsStore.keepConnectionAlive.collectAsState(initial = false)
+    val appLockEnabled by settingsStore.appLockEnabled.collectAsState(initial = false)
     val quickTileEntityId by settingsStore.quickTileEntityId.collectAsState(initial = null)
     val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
     val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
@@ -250,6 +251,13 @@ fun SettingsScreen(
                 subtitle = "Show entity registry counts in the dashboard title.",
                 checked = showDebugDiag,
                 onCheckedChange = { scope.launch { settingsStore.setShowDebugDiag(it) } },
+            )
+
+            SettingsToggle(
+                title = "App Lock",
+                subtitle = "Require your fingerprint, face, or device PIN to open Domus.",
+                checked = appLockEnabled,
+                onCheckedChange = { scope.launch { settingsStore.setAppLockEnabled(it) } },
             )
         }
     }
