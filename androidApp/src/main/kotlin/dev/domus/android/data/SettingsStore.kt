@@ -2,6 +2,7 @@ package dev.domus.android.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -28,6 +29,12 @@ class SettingsStore(private val context: Context) {
         private val UI_DENSITY_KEY = stringPreferencesKey("ui_density")        // "compact"|"comfortable"|"spacious"
         // Dashboard
         private val DASHBOARD_LAYOUT_KEY = stringPreferencesKey("dashboard_layout") // "grid2"|"list"|"grid4"
+        // Geofence
+        private val GEOFENCE_ENABLED_KEY = booleanPreferencesKey("geofence_enabled")
+        private val GEOFENCE_LATITUDE_KEY = doublePreferencesKey("geofence_latitude")
+        private val GEOFENCE_LONGITUDE_KEY = doublePreferencesKey("geofence_longitude")
+        private val GEOFENCE_RADIUS_METERS_KEY = intPreferencesKey("geofence_radius_meters")
+        private val GEOFENCE_ENTITY_ID_KEY = stringPreferencesKey("geofence_entity_id")
     }
 
     val showDebugDiag: Flow<Boolean> = context.settingsDataStore.data.map { it[SHOW_DEBUG_DIAG_KEY] ?: true }
@@ -45,6 +52,11 @@ class SettingsStore(private val context: Context) {
     val seedColorArgb: Flow<Int> = context.settingsDataStore.data.map { it[SEED_COLOR_KEY] ?: 0 }
     val uiDensity: Flow<String> = context.settingsDataStore.data.map { it[UI_DENSITY_KEY] ?: "comfortable" }
     val dashboardLayout: Flow<String> = context.settingsDataStore.data.map { it[DASHBOARD_LAYOUT_KEY] ?: "grid2" }
+    val geofenceEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[GEOFENCE_ENABLED_KEY] ?: false }
+    val geofenceLatitude: Flow<Double?> = context.settingsDataStore.data.map { it[GEOFENCE_LATITUDE_KEY] }
+    val geofenceLongitude: Flow<Double?> = context.settingsDataStore.data.map { it[GEOFENCE_LONGITUDE_KEY] }
+    val geofenceRadiusMeters: Flow<Int> = context.settingsDataStore.data.map { it[GEOFENCE_RADIUS_METERS_KEY] ?: 150 }
+    val geofenceEntityId: Flow<String?> = context.settingsDataStore.data.map { it[GEOFENCE_ENTITY_ID_KEY] }
 
     suspend fun setShowDebugDiag(show: Boolean) {
         context.settingsDataStore.edit { it[SHOW_DEBUG_DIAG_KEY] = show }
@@ -94,5 +106,26 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setDashboardLayout(layout: String) {
         context.settingsDataStore.edit { it[DASHBOARD_LAYOUT_KEY] = layout }
+    }
+
+    suspend fun setGeofenceEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[GEOFENCE_ENABLED_KEY] = enabled }
+    }
+
+    suspend fun setGeofenceLocation(latitude: Double, longitude: Double) {
+        context.settingsDataStore.edit {
+            it[GEOFENCE_LATITUDE_KEY] = latitude
+            it[GEOFENCE_LONGITUDE_KEY] = longitude
+        }
+    }
+
+    suspend fun setGeofenceRadiusMeters(radius: Int) {
+        context.settingsDataStore.edit { it[GEOFENCE_RADIUS_METERS_KEY] = radius }
+    }
+
+    suspend fun setGeofenceEntityId(entityId: String?) {
+        context.settingsDataStore.edit {
+            if (entityId == null) it.remove(GEOFENCE_ENTITY_ID_KEY) else it[GEOFENCE_ENTITY_ID_KEY] = entityId
+        }
     }
 }

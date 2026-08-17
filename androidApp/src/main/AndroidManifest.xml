@@ -13,6 +13,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- For writing/reading Domus-formatted NFC tags (optional; not all devices have NFC). -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+
+    <!-- For the optional home geofence (Settings > Automation). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
     <application
         android:name=".DomusApplication"
         android:enableOnBackInvokedCallback="true"
@@ -41,6 +49,25 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Launched directly by the system when a Domus-written NFC tag is tapped. -->
+        <activity
+            android:name=".NfcTagTriggerActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="vnd.android.nfc"
+                    android:host="ext"
+                    android:pathPrefix="/dev.domus.android:scene" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".geofence.GeofenceBroadcastReceiver" android:exported="false" />
 
         <service
             android:name=".HaConnectionService"

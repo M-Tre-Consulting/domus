@@ -116,6 +116,90 @@
     <string name="widget_on">On</string>
     <string name="widget_off">Off</string>
 
+    <!-- Settings -->
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_dashboard">Dashboard</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_security">Security</string>
+    <string name="settings_section_automation">Automation</string>
+    <string name="settings_section_advanced">Advanced</string>
+
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_theme_subtitle">Override the system light/dark preference.</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_color_scheme_title">Color Scheme</string>
+    <string name="settings_color_scheme_subtitle">Seed color for the Material palette. Auto uses your wallpaper.</string>
+    <string name="settings_color_auto">Auto</string>
+    <string name="settings_color_blue">Blue</string>
+    <string name="settings_color_purple">Purple</string>
+    <string name="settings_color_teal">Teal</string>
+    <string name="settings_color_green">Green</string>
+    <string name="settings_color_orange">Orange</string>
+    <string name="settings_color_red">Red</string>
+    <string name="settings_color_pink">Pink</string>
+    <string name="settings_color_selected">Selected</string>
+    <string name="settings_density_title">Density</string>
+    <string name="settings_density_subtitle">Scale the UI up or down to fit more (or less) on screen.</string>
+    <string name="settings_density_compact">Compact</string>
+    <string name="settings_density_comfortable">Standard</string>
+    <string name="settings_density_spacious">Spacious</string>
+
+    <string name="settings_layout_title">Layout</string>
+    <string name="settings_layout_subtitle">How many columns to show on the dashboard.</string>
+    <string name="settings_layout_list">List</string>
+    <string name="settings_layout_grid">Grid</string>
+    <string name="settings_layout_compact">Compact</string>
+    <string name="settings_group_by_room_title">Group by Room</string>
+    <string name="settings_group_by_room_subtitle">Organise entities by area instead of device type.</string>
+
+    <string name="settings_haptic_title">Haptic Feedback</string>
+    <string name="settings_haptic_subtitle">Vibrate when interacting with switches and sliders.</string>
+    <string name="settings_keep_screen_on_title">Keep Screen On</string>
+    <string name="settings_keep_screen_on_subtitle">Prevent the screen from sleeping while the dashboard is open.</string>
+    <string name="settings_keep_connected_title">Keep Connected in Background</string>
+    <string name="settings_keep_connected_subtitle">Show a persistent notification and keep the realtime connection alive when the app isn\'t in the foreground.</string>
+    <string name="settings_refresh_interval_title">Detail Refresh Interval</string>
+    <string name="settings_refresh_interval_subtitle">How often detail screens poll for the latest sensor values.</string>
+    <string name="settings_refresh_interval_value">%1$ds</string>
+
+    <string name="settings_quick_tile_title">Tile entity</string>
+    <string name="settings_quick_tile_subtitle">Add the Domus tile from your device\'s quick settings panel to toggle the entity below without opening the app.</string>
+    <string name="settings_quick_tile_empty">Favorite a light, switch, or fan to make it available here.</string>
+
+    <string name="settings_app_lock_title">App Lock</string>
+    <string name="settings_app_lock_subtitle">Require your fingerprint, face, or device PIN to open Domus.</string>
+
+    <string name="settings_debug_title">Show Debug Info</string>
+    <string name="settings_debug_subtitle">Show entity registry counts in the dashboard title.</string>
+
+    <!-- NFC tags -->
+    <string name="nfc_section_title">NFC Tags</string>
+    <string name="nfc_section_subtitle">Write a scene or script to a blank NFC tag. Tapping the tag with your phone later activates it instantly, even if Domus isn\'t open.</string>
+    <string name="nfc_unavailable">This device doesn\'t support NFC.</string>
+    <string name="nfc_pick_scene_empty">Favorite a scene or script to write it to a tag.</string>
+    <string name="nfc_write_button">Write to tag</string>
+    <string name="nfc_writing">Hold a blank NFC tag near the back of your phone…</string>
+    <string name="nfc_write_success">Tag written — tap it any time to run \"%1$s\".</string>
+    <string name="nfc_write_failed">Couldn\'t write tag: %1$s</string>
+    <string name="nfc_triggered">Activated %1$s</string>
+
+    <!-- Geofencing -->
+    <string name="geofence_section_title">Home Geofence</string>
+    <string name="geofence_section_subtitle">Notify Home Assistant when you arrive at or leave a place, so presence-based automations (like \"turn off everything when I leave\") work automatically.</string>
+    <string name="geofence_permission_needed">Domus needs location access, including \"Allow all the time\", to detect arrivals and departures in the background.</string>
+    <string name="geofence_grant_button">Grant location access</string>
+    <string name="geofence_pick_entity_empty">Favorite a person or device_tracker entity to notify it on arrival/departure.</string>
+    <string name="geofence_pick_entity_title">Entity to update</string>
+    <string name="geofence_radius_title">Radius: %1$d m</string>
+    <string name="geofence_use_current_location">Use current location</string>
+    <string name="geofence_no_location">Couldn\'t get current location: %1$s</string>
+    <string name="geofence_no_fix_yet">No cached location yet — open Google Maps once to get a GPS fix, then try again.</string>
+    <string name="geofence_enabled_title">Enable geofence</string>
+    <string name="geofence_enabled_subtitle">Requires location access; uses minimal battery via Google Play services geofencing.</string>
+    <string name="geofence_not_configured">Set a location and entity first.</string>
+
     <!-- App lock -->
     <string name="app_lock_prompt_title">Unlock Domus</string>
     <string name="app_lock_locked_title">Domus is locked</string>
