@@ -1118,7 +1118,7 @@ private fun MediaPlayerControls(entity: HaEntityState, onCallService: (HaService
 
 /** Three animated bars that pulse independently to indicate audio playback. */
 @Composable
-private fun EqualizerBars(color: Color, modifier: Modifier = Modifier) {
+internal fun EqualizerBars(color: Color, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "eq")
     val delays = listOf(0, 150, 75)
     val heights = delays.map { delay ->

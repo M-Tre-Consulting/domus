@@ -1,5 +1,11 @@
 package dev.domus.android.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +63,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -188,19 +195,46 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
         ) {
             Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
 
-            // Album art placeholder
-            Surface(
-                shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(180.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.MusicNote,
-                        contentDescription = null,
-                        modifier = Modifier.size(72.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+            // Album art placeholder — no artwork fetching yet, but it breathes gently while
+            // playing and shows a small "now playing" equalizer badge, instead of sitting dead.
+            val albumArtTransition = rememberInfiniteTransition(label = "albumArtPulse")
+            val albumArtPulse by albumArtTransition.animateFloat(
+                initialValue = 0.97f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(900, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "albumArtPulseScale",
+            )
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Surface(
+                    shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier
+                        .size(180.dp)
+                        .scale(if (isPlaying) albumArtPulse else 1f),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.MusicNote,
+                            contentDescription = null,
+                            modifier = Modifier.size(72.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+                if (isPlaying) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(DesignTokens.Spacing.sm.dp),
+                    ) {
+                        EqualizerBars(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(8.dp),
+                        )
+                    }
                 }
             }
 

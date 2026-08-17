@@ -1,13 +1,16 @@
 package dev.domus.android.ui.screens
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BrokenImage
@@ -28,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
@@ -99,22 +103,32 @@ fun CameraDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 .padding(DesignTokens.Spacing.md.dp),
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center,
             ) {
                 val bitmap = imageBitmap
-                when {
-                    bitmap != null -> Image(
-                        bitmap = bitmap,
-                        contentDescription = entity?.friendlyName ?: entityId,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    loadFailed -> Icon(
-                        imageVector = Icons.Filled.BrokenImage,
-                        contentDescription = stringResource(R.string.camera_load_failed),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                    else -> CircularProgressIndicator()
+                Crossfade(targetState = bitmap, label = "cameraFrame") { frame ->
+                    when {
+                        frame != null -> Image(
+                            bitmap = frame,
+                            contentDescription = entity?.friendlyName ?: entityId,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        loadFailed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.BrokenImage,
+                                contentDescription = stringResource(R.string.camera_load_failed),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
             }
             Text(
