@@ -55,6 +55,7 @@ import dev.domus.android.ui.screens.SettingsScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.shared.api.HaApiException
+import dev.domus.shared.api.HaOAuthException
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaConnectionConfig
 import dev.domus.shared.model.HaCredentials
@@ -154,7 +155,8 @@ private fun DomusNavHost() {
             LaunchedEffect(Unit) {
                 val savedConfig = connectionStore.read()
                 // Reconnect using saved credentials.
-                // HaApiException(401/403) means credentials are invalid → force re-login.
+                // HaApiException(401/403) or HaOAuthException (dead refresh_token) means
+                // credentials are invalid → force re-login.
                 // Any other exception (network timeout, server unreachable) is transient —
                 // keep the session and let the Dashboard's WS reconnect loop recover.
                 val reconnected = savedConfig?.let { config ->
@@ -164,6 +166,8 @@ private fun DomusNavHost() {
                         session
                     } catch (e: HaApiException) {
                         null // Explicit 401/403: credentials rejected, must re-login
+                    } catch (e: HaOAuthException) {
+                        null // refresh_token rejected by the server, must re-login
                     } catch (_: Exception) {
                         session // Network error: go to Dashboard, it will reconnect
                     }
@@ -244,6 +248,16 @@ private fun DomusNavHost() {
                     }
                 }
             } else {
+                LaunchedEffect(session) {
+                    session.authExpired.collect { expired ->
+                        if (expired) {
+                            HaSessionHolder.disconnect()
+                            navController.navigate(Routes.CONNECT) {
+                                popUpTo(Routes.DASHBOARD) { inclusive = true }
+                            }
+                        }
+                    }
+                }
                 CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                     DashboardScreen(
                         session = session,

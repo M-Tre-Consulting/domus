@@ -7,6 +7,7 @@ import dev.domus.shared.auth.HaTokenProvider
 import dev.domus.shared.createHttpClient
 import dev.domus.shared.model.HaConnectionConfig
 import dev.domus.shared.model.HaCredentials
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Bundles the REST client, WebSocket client, and repository for one Home Assistant
@@ -31,4 +32,8 @@ class HaSession(
     val restApi = HaRestApi(httpClient, config.baseUrl, tokenProvider)
     private val webSocketClient = HaWebSocketClient(httpClient, config.websocketUrl, tokenProvider)
     val repository = HaRepository(restApi, webSocketClient)
+
+    /** True once the refresh_token has been rejected by the server; the UI should route back
+     *  to the login screen instead of retrying forever. */
+    val authExpired: StateFlow<Boolean> = tokenProvider.authExpired
 }
