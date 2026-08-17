@@ -74,6 +74,7 @@ fun SettingsScreen(
     val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
     val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
     val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
+    val keepConnectionAlive by settingsStore.keepConnectionAlive.collectAsState(initial = false)
     val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
     val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
     val seedColorArgb by settingsStore.seedColorArgb.collectAsState(initial = 0)
@@ -167,6 +168,13 @@ fun SettingsScreen(
                 subtitle = "Prevent the screen from sleeping while the dashboard is open.",
                 checked = keepScreenOn,
                 onCheckedChange = { scope.launch { settingsStore.setKeepScreenOn(it) } },
+            )
+
+            SettingsToggle(
+                title = "Keep Connected in Background",
+                subtitle = "Show a persistent notification and keep the realtime connection alive when the app isn't in the foreground.",
+                checked = keepConnectionAlive,
+                onCheckedChange = { scope.launch { settingsStore.setKeepConnectionAlive(it) } },
             )
 
             RefreshIntervalDropdown(

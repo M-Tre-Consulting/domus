@@ -18,6 +18,7 @@ class SettingsStore(private val context: Context) {
         private val USE_HAPTIC_FEEDBACK_KEY = booleanPreferencesKey("use_haptic_feedback")
         private val GROUP_BY_ROOM_KEY = booleanPreferencesKey("group_by_room")
         private val KEEP_SCREEN_ON_KEY = booleanPreferencesKey("keep_screen_on")
+        private val KEEP_CONNECTION_ALIVE_KEY = booleanPreferencesKey("keep_connection_alive")
         private val REFRESH_INTERVAL_KEY = intPreferencesKey("refresh_interval_seconds")
         // Appearance
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")        // "system"|"light"|"dark"
@@ -31,6 +32,8 @@ class SettingsStore(private val context: Context) {
     val useHapticFeedback: Flow<Boolean> = context.settingsDataStore.data.map { it[USE_HAPTIC_FEEDBACK_KEY] ?: true }
     val groupByRoom: Flow<Boolean> = context.settingsDataStore.data.map { it[GROUP_BY_ROOM_KEY] ?: true }
     val keepScreenOn: Flow<Boolean> = context.settingsDataStore.data.map { it[KEEP_SCREEN_ON_KEY] ?: false }
+    val keepConnectionAlive: Flow<Boolean> =
+        context.settingsDataStore.data.map { it[KEEP_CONNECTION_ALIVE_KEY] ?: false }
     val refreshIntervalSeconds: Flow<Int> = context.settingsDataStore.data.map { it[REFRESH_INTERVAL_KEY] ?: 10 }
     val themeMode: Flow<String> = context.settingsDataStore.data.map { it[THEME_MODE_KEY] ?: "system" }
     val seedColorArgb: Flow<Int> = context.settingsDataStore.data.map { it[SEED_COLOR_KEY] ?: 0 }
@@ -51,6 +54,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setKeepScreenOn(enabled: Boolean) {
         context.settingsDataStore.edit { it[KEEP_SCREEN_ON_KEY] = enabled }
+    }
+
+    suspend fun setKeepConnectionAlive(enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEEP_CONNECTION_ALIVE_KEY] = enabled }
     }
 
     suspend fun setRefreshIntervalSeconds(seconds: Int) {

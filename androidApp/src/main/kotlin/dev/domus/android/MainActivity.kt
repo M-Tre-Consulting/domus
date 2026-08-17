@@ -132,12 +132,18 @@ private fun DomusNavHost() {
             localNetworkPermLauncher.launch("android.permission.ACCESS_LOCAL_NETWORK")
         }
     }
+    // Android 13+ requires a runtime grant to show the "keep connected in background" status
+    // notification. Requested lazily (only once that setting is turned on) below.
+    val notificationPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {}
     val connectionStore = remember { ConnectionStore(context.applicationContext) }
     val favoritesStore = remember { FavoritesStore(context.applicationContext) }
     val onboardingStore = remember { OnboardingStore(context.applicationContext) }
     val settingsStore = remember { SettingsStore(context.applicationContext) }
     val favoriteEntityIds by favoritesStore.favoriteEntityIds.collectAsState(initial = emptySet())
     val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
+    val keepConnectionAlive by settingsStore.keepConnectionAlive.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
 
     fun persistRefreshed(baseUrl: String): suspend (HaCredentials.OAuthSession) -> Unit = { refreshed ->
@@ -255,11 +261,25 @@ private fun DomusNavHost() {
                 LaunchedEffect(session) {
                     session.authExpired.collect { expired ->
                         if (expired) {
+                            HaConnectionService.stop(context.applicationContext)
                             HaSessionHolder.disconnect()
                             navController.navigate(Routes.CONNECT) {
                                 popUpTo(Routes.DASHBOARD) { inclusive = true }
                             }
                         }
+                    }
+                }
+                LaunchedEffect(session, keepConnectionAlive) {
+                    if (keepConnectionAlive) {
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            context.checkSelfPermission("android.permission.POST_NOTIFICATIONS") !=
+                            PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermLauncher.launch("android.permission.POST_NOTIFICATIONS")
+                        }
+                        HaConnectionService.start(context.applicationContext)
+                    } else {
+                        HaConnectionService.stop(context.applicationContext)
                     }
                 }
                 LaunchedEffect(session, favoriteEntityIds) {
@@ -283,6 +303,7 @@ private fun DomusNavHost() {
                         onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                         onLogout = {
                             scope.launch { connectionStore.clear() }
+                            HaConnectionService.stop(context.applicationContext)
                             HaSessionHolder.disconnect()
                             navController.navigate(Routes.CONNECT) {
                                 popUpTo(Routes.DASHBOARD) { inclusive = true }

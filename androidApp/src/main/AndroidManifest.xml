@@ -8,6 +8,11 @@
          instance fails with ERR_LOCAL_NETWORK_PERMISSION_MISSING. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
+    <!-- For the optional "keep connected in background" foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".DomusApplication"
         android:enableOnBackInvokedCallback="true"
@@ -36,5 +41,10 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service
+            android:name=".HaConnectionService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 </manifest>
