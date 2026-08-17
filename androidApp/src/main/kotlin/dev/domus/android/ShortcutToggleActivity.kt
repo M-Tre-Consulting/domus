@@ -28,7 +28,7 @@ class ShortcutToggleActivity : ComponentActivity() {
                 val connectionStore = ConnectionStore(applicationContext)
                 val config = connectionStore.read()
                 if (config == null) {
-                    "Open Domus and sign in first"
+                    getString(R.string.shortcut_not_connected)
                 } else {
                     val session = HaSession(config) { refreshed ->
                         connectionStore.save(HaConnectionConfig(config.baseUrl, refreshed))
@@ -36,10 +36,10 @@ class ShortcutToggleActivity : ComponentActivity() {
                     session.restApi.callService(
                         HaServiceCall(domain = "homeassistant", service = "toggle", entityId = entityId),
                     )
-                    "Toggled $label"
+                    getString(R.string.shortcut_toggled, label)
                 }
             } catch (e: Exception) {
-                "Couldn't reach Home Assistant"
+                getString(R.string.shortcut_failed)
             }
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
             finish()

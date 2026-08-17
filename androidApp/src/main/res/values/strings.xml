@@ -101,6 +101,21 @@
     <string name="history_range_7d">7 days</string>
     <string name="history_reset_zoom">Reset zoom  ×%1$s</string>
 
+    <!-- Background connection service notification -->
+    <string name="service_connected">Connected to Home Assistant</string>
+    <string name="service_connecting">Connecting to Home Assistant…</string>
+    <string name="service_reconnecting">Reconnecting…</string>
+
+    <!-- Launcher shortcuts / quick tile toggle feedback -->
+    <string name="shortcut_not_connected">Open Domus and sign in first</string>
+    <string name="shortcut_toggled">Toggled %1$s</string>
+    <string name="shortcut_failed">Couldn\'t reach Home Assistant</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_empty">Add favorites in the app to control them here.</string>
+    <string name="widget_on">On</string>
+    <string name="widget_off">Off</string>
+
     <!-- Onboarding -->
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>

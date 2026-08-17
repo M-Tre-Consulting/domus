@@ -77,7 +77,7 @@ class DomusQuickToggleTile : TileService() {
 
     private fun markUnavailable() {
         qsTile?.apply {
-            label = "Domus"
+            label = getString(R.string.app_name)
             state = Tile.STATE_UNAVAILABLE
             icon = Icon.createWithResource(this@DomusQuickToggleTile, R.drawable.ic_launcher_monochrome)
             updateTile()

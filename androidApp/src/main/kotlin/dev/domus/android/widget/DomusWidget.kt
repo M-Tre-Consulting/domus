@@ -22,6 +22,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import dev.domus.android.R
 import dev.domus.android.data.ConnectionStore
 import dev.domus.android.data.FavoritesStore
 import dev.domus.shared.data.HaSession
@@ -37,9 +38,15 @@ private const val MAX_WIDGET_ROWS = 5
 class DomusWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val entities = loadFavoriteEntities(context)
+        val strings = WidgetStrings(
+            title = context.getString(R.string.app_name),
+            empty = context.getString(R.string.widget_empty),
+            on = context.getString(R.string.widget_on),
+            off = context.getString(R.string.widget_off),
+        )
         provideContent {
             GlanceTheme {
-                WidgetContent(entities)
+                WidgetContent(entities, strings)
             }
         }
     }
@@ -70,8 +77,10 @@ class DomusWidget : GlanceAppWidget() {
     }
 }
 
+private data class WidgetStrings(val title: String, val empty: String, val on: String, val off: String)
+
 @Composable
-private fun WidgetContent(entities: List<HaEntityState>) {
+private fun WidgetContent(entities: List<HaEntityState>, strings: WidgetStrings) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -79,12 +88,12 @@ private fun WidgetContent(entities: List<HaEntityState>) {
             .padding(12.dp),
     ) {
         Text(
-            text = "Domus",
+            text = strings.title,
             style = TextStyle(fontWeight = FontWeight.Bold, color = GlanceTheme.colors.onBackground),
         )
         if (entities.isEmpty()) {
             Text(
-                text = "Add favorites in the app to control them here.",
+                text = strings.empty,
                 style = TextStyle(color = GlanceTheme.colors.onBackground),
                 modifier = GlanceModifier.padding(top = 8.dp),
             )
@@ -110,7 +119,7 @@ private fun WidgetContent(entities: List<HaEntityState>) {
                         modifier = GlanceModifier.defaultWeight(),
                     )
                     Text(
-                        text = if (isOn) "On" else "Off",
+                        text = if (isOn) strings.on else strings.off,
                         style = TextStyle(color = GlanceTheme.colors.onBackground),
                     )
                 }

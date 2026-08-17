@@ -51,9 +51,9 @@ class HaConnectionService : Service() {
 
     private fun buildNotification(state: WebSocketState): Notification {
         val statusText = when (state) {
-            WebSocketState.Connected -> "Connected to Home Assistant"
-            WebSocketState.Connecting -> "Connecting to Home Assistant…"
-            WebSocketState.Reconnecting -> "Reconnecting…"
+            WebSocketState.Connected -> getString(R.string.service_connected)
+            WebSocketState.Connecting -> getString(R.string.service_connecting)
+            WebSocketState.Reconnecting -> getString(R.string.service_reconnecting)
         }
         val openAppIntent = PendingIntent.getActivity(
             this,
@@ -62,7 +62,7 @@ class HaConnectionService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Domus")
+            .setContentTitle(getString(R.string.app_name))
             .setContentText(statusText)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setOngoing(true)
