@@ -39,8 +39,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaHistoryPoint
@@ -53,8 +55,6 @@ private val ACTIVE_STATES = setOf(
 )
 
 private data class ChartPoint(val timeMs: Long, val value: Double?, val state: String)
-
-private val TIME_RANGES = listOf(24 to "24 h", 48 to "48 h", 168 to "7 days")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +70,11 @@ fun StateHistorySection(
     var showSheet by remember { mutableStateOf(false) }
     var sheetHours by remember { mutableIntStateOf(24) }
     var sheetPoints by remember { mutableStateOf<List<HaHistoryPoint>?>(null) }
+    val timeRanges = listOf(
+        24 to stringResource(R.string.history_range_24h),
+        48 to stringResource(R.string.history_range_48h),
+        168 to stringResource(R.string.history_range_7d),
+    )
 
     LaunchedEffect(showSheet, sheetHours, entityId) {
         if (!showSheet) { sheetPoints = null; return@LaunchedEffect }
@@ -79,7 +84,7 @@ fun StateHistorySection(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Last 24 hours",
+            text = stringResource(R.string.history_last_24h),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -94,7 +99,7 @@ fun StateHistorySection(
             }
 
             points!!.isEmpty() -> Text(
-                text = "No history available",
+                text = stringResource(R.string.history_none),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -115,7 +120,7 @@ fun StateHistorySection(
                     )
                 }
                 Text(
-                    text = "Tap to expand",
+                    text = stringResource(R.string.history_tap_to_expand),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.End).padding(top = 2.dp),
@@ -140,7 +145,7 @@ fun StateHistorySection(
                     modifier = Modifier.padding(bottom = DesignTokens.Spacing.md.dp),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp)) {
-                    TIME_RANGES.forEach { (h, label) ->
+                    timeRanges.forEach { (h, label) ->
                         FilterChip(
                             selected = sheetHours == h,
                             onClick = { sheetHours = h },
@@ -157,7 +162,7 @@ fun StateHistorySection(
                     ) { CircularProgressIndicator() }
 
                     sheetPoints!!.isEmpty() -> Text(
-                        text = "No history available for this period",
+                        text = stringResource(R.string.history_none_for_period),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -241,7 +246,7 @@ private fun StateHistoryChart(
             if (scale > 1.05f) {
                 AssistChip(
                     onClick = { scale = 1f; panOffsetFraction = 0f },
-                    label = { Text("Reset zoom  ×${"%.1f".format(scale)}") },
+                    label = { Text(stringResource(R.string.history_reset_zoom, "%.1f".format(scale))) },
                 )
             } else {
                 Text(

@@ -79,6 +79,28 @@
     <string name="light_saturation">Saturation</string>
     <string name="light_presets">Presets</string>
 
+    <!-- Media player detail -->
+    <string name="media_error_update">Couldn\'t update: %1$s</string>
+    <string name="media_previous">Previous</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_play">Play</string>
+    <string name="media_next">Next</string>
+    <string name="media_unmute">Unmute</string>
+    <string name="media_mute">Mute</string>
+    <string name="media_shuffle">Shuffle</string>
+    <string name="media_repeat">Repeat: %1$s</string>
+    <string name="media_source">Source</string>
+
+    <!-- State history -->
+    <string name="history_last_24h">Last 24 hours</string>
+    <string name="history_none">No history available</string>
+    <string name="history_none_for_period">No history available for this period</string>
+    <string name="history_tap_to_expand">Tap to expand</string>
+    <string name="history_range_24h">24 h</string>
+    <string name="history_range_48h">48 h</string>
+    <string name="history_range_7d">7 days</string>
+    <string name="history_reset_zoom">Reset zoom  ×%1$s</string>
+
     <!-- Onboarding -->
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>

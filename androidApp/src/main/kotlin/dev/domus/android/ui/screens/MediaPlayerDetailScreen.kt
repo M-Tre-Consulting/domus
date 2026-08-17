@@ -58,9 +58,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -96,6 +99,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
     val refreshInterval = LocalRefreshIntervalSeconds.current
+    val context = LocalContext.current
 
     LaunchedEffect(entityId, refreshInterval) {
         while (true) {
@@ -108,7 +112,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             try { session.repository.callService(call) } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.media_error_update, e.message))
             }
         }
     }
@@ -125,7 +129,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -288,7 +292,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                     },
                     modifier = Modifier.size(48.dp),
                 ) {
-                    Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.media_previous), modifier = Modifier.size(28.dp))
                 }
                 FilledIconButton(
                     onClick = {
@@ -298,7 +302,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        contentDescription = stringResource(if (isPlaying) R.string.media_pause else R.string.media_play),
                         modifier = Modifier.size(40.dp),
                     )
                 }
@@ -308,7 +312,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                     },
                     modifier = Modifier.size(48.dp),
                 ) {
-                    Icon(Icons.Filled.SkipNext, contentDescription = "Next", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.media_next), modifier = Modifier.size(28.dp))
                 }
             }
 
@@ -333,7 +337,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                 ) {
                     Icon(
                         imageVector = if (entity.isVolumeMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = if (entity.isVolumeMuted) "Unmute" else "Mute",
+                        contentDescription = stringResource(if (entity.isVolumeMuted) R.string.media_unmute else R.string.media_mute),
                     )
                 }
                 Slider(
@@ -402,7 +406,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                     },
                     colors = if (shuffleActive) IconButtonDefaults.filledTonalIconButtonColors() else IconButtonDefaults.iconButtonColors(),
                 ) {
-                    Icon(Icons.Filled.Shuffle, contentDescription = "Shuffle")
+                    Icon(Icons.Filled.Shuffle, contentDescription = stringResource(R.string.media_shuffle))
                 }
 
                 val repeat = entity.repeatMode
@@ -422,7 +426,7 @@ fun MediaPlayerDetailScreen(session: HaSession, entityId: String, onBack: () -> 
                 ) {
                     Icon(
                         imageVector = if (repeat == "one") Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                        contentDescription = "Repeat: $repeat",
+                        contentDescription = stringResource(R.string.media_repeat, repeat),
                     )
                 }
             }
@@ -456,7 +460,7 @@ private fun SourceSelector(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
-                    Text("Source", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.media_source), style = MaterialTheme.typography.labelSmall)
                     Text(currentSource ?: "—", style = MaterialTheme.typography.bodyMedium)
                 }
                 Text("▾", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
