@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Domus</string>
+
+    <!-- Common -->
+    <string name="common_back">Zurück</string>
+    <string name="common_search">Suchen</string>
+    <string name="common_settings">Einstellungen</string>
+    <string name="common_decrease_temperature">Temperatur senken</string>
+    <string name="common_increase_temperature">Temperatur erhöhen</string>
+    <string name="common_open">Öffnen</string>
+    <string name="common_stop">Stopp</string>
+    <string name="common_close">Schließen</string>
+    <string name="common_start">Starten</string>
+    <string name="common_pause">Pause</string>
+    <string name="common_dock">Andocken</string>
+    <string name="common_choose_entities">Entitäten auswählen</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_search_placeholder">Entitäten suchen…</string>
+    <string name="dashboard_close_search">Suche schließen</string>
+    <string name="dashboard_disconnect">Trennen</string>
+    <string name="dashboard_empty_title">Noch keine Entitäten ausgewählt.</string>
+    <string name="dashboard_other_room">Sonstige</string>
+    <string name="dashboard_select_option">Option auswählen</string>
+    <string name="dashboard_choose_option">Option wählen</string>
+    <string name="dashboard_error_load_entities">Entitäten konnten nicht geladen werden: %1$s</string>
+    <string name="dashboard_error_refresh">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="dashboard_error_update">%1$s konnte nicht aktualisiert werden: %2$s</string>
+    <string name="action_activate">Aktivieren</string>
+    <string name="action_run">Ausführen</string>
+    <string name="action_press">Drücken</string>
+    <string name="alarm_arm_home">Scharf (zu Hause)</string>
+    <string name="alarm_arm_away">Scharf (abwesend)</string>
+    <string name="alarm_disarm">Unscharf</string>
+    <string name="dashboard_cover_position">Position: %1$d%%</string>
+
+    <!-- Lock detail -->
+    <string name="lock_error_update">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="lock_state_locked">Verriegelt</string>
+    <string name="lock_state_unlocked">Entriegelt</string>
+    <string name="lock_state_locking">Wird verriegelt…</string>
+    <string name="lock_state_unlocking">Wird entriegelt…</string>
+    <string name="lock_state_jammed">Blockiert</string>
+    <string name="lock_changed_by">von %1$s</string>
+    <string name="lock_securing">Wird gesichert…</string>
+    <string name="lock_opening">Wird geöffnet…</string>
+
+    <!-- Climate detail -->
+    <string name="climate_error_update">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="climate_power">Ein/Aus</string>
+    <string name="climate_mode">Modus</string>
+    <string name="climate_fan_speed">Lüfterstufe</string>
+    <string name="climate_swing">Schwenken</string>
+    <string name="climate_current_temperature">Aktuelle Temperatur</string>
+    <string name="climate_humidity">Luftfeuchtigkeit</string>
+
+    <!-- Switch detail -->
+    <string name="switch_error_update">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="switch_turn_off">Ausschalten</string>
+    <string name="switch_turn_on">Einschalten</string>
+    <string name="switch_energy_monitoring">Energieüberwachung</string>
+    <string name="switch_power">Leistung</string>
+    <string name="switch_voltage">Spannung</string>
+    <string name="switch_current">Strom</string>
+    <string name="switch_todays_energy">Heutiger Verbrauch</string>
+    <string name="switch_energy">Energie</string>
+    <string name="switch_apparent_power">Scheinleistung</string>
+
+    <!-- Light detail -->
+    <string name="light_error_update">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="light_turn_off">Ausschalten</string>
+    <string name="light_turn_on">Einschalten</string>
+    <string name="light_brightness">Helligkeit</string>
+    <string name="light_color_temperature">Farbtemperatur</string>
+    <string name="light_warm_kelvin">Warm  %1$dK</string>
+    <string name="light_cool_kelvin">%1$dK  Kalt</string>
+    <string name="light_color">Farbe</string>
+    <string name="light_saturation">Sättigung</string>
+    <string name="light_presets">Voreinstellungen</string>
+
+    <!-- Media player detail -->
+    <string name="media_error_update">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="media_previous">Zurück</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_play">Wiedergabe</string>
+    <string name="media_next">Weiter</string>
+    <string name="media_unmute">Stummschaltung aufheben</string>
+    <string name="media_mute">Stumm schalten</string>
+    <string name="media_shuffle">Zufallswiedergabe</string>
+    <string name="media_repeat">Wiederholen: %1$s</string>
+    <string name="media_source">Quelle</string>
+
+    <!-- State history -->
+    <string name="history_last_24h">Letzte 24 Stunden</string>
+    <string name="history_none">Kein Verlauf verfügbar</string>
+    <string name="history_none_for_period">Kein Verlauf für diesen Zeitraum verfügbar</string>
+    <string name="history_tap_to_expand">Tippen zum Vergrößern</string>
+    <string name="history_range_24h">24 Std.</string>
+    <string name="history_range_48h">48 Std.</string>
+    <string name="history_range_7d">7 Tage</string>
+    <string name="history_reset_zoom">Zoom zurücksetzen  ×%1$s</string>
+
+    <!-- Background connection service notification -->
+    <string name="service_connected">Mit Home Assistant verbunden</string>
+    <string name="service_connecting">Verbindung zu Home Assistant wird hergestellt…</string>
+    <string name="service_reconnecting">Verbindung wird wiederhergestellt…</string>
+
+    <!-- Launcher shortcuts / quick tile toggle feedback -->
+    <string name="shortcut_not_connected">Bitte zuerst in Domus anmelden</string>
+    <string name="shortcut_toggled">%1$s umgeschaltet</string>
+    <string name="shortcut_failed">Home Assistant nicht erreichbar</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_empty">Füge in der App Favoriten hinzu, um sie hier zu steuern.</string>
+    <string name="widget_on">An</string>
+    <string name="widget_off">Aus</string>
+
+    <!-- Settings -->
+    <string name="settings_section_appearance">Erscheinungsbild</string>
+    <string name="settings_section_dashboard">Dashboard</string>
+    <string name="settings_section_general">Allgemein</string>
+    <string name="settings_section_security">Sicherheit</string>
+    <string name="settings_section_automation">Automatisierung</string>
+    <string name="settings_section_advanced">Erweitert</string>
+
+    <string name="settings_theme_title">Design</string>
+    <string name="settings_theme_subtitle">Überschreibt die Hell/Dunkel-Einstellung des Systems.</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_color_scheme_title">Farbschema</string>
+    <string name="settings_color_scheme_subtitle">Grundfarbe für die Material-Palette. \"Auto\" verwendet dein Hintergrundbild.</string>
+    <string name="settings_color_auto">Auto</string>
+    <string name="settings_color_blue">Blau</string>
+    <string name="settings_color_purple">Violett</string>
+    <string name="settings_color_teal">Petrol</string>
+    <string name="settings_color_green">Grün</string>
+    <string name="settings_color_orange">Orange</string>
+    <string name="settings_color_red">Rot</string>
+    <string name="settings_color_pink">Pink</string>
+    <string name="settings_color_selected">Ausgewählt</string>
+    <string name="settings_density_title">Dichte</string>
+    <string name="settings_density_subtitle">Skaliert die Oberfläche, um mehr oder weniger Inhalte anzuzeigen.</string>
+    <string name="settings_density_compact">Kompakt</string>
+    <string name="settings_density_comfortable">Standard</string>
+    <string name="settings_density_spacious">Geräumig</string>
+
+    <string name="settings_layout_title">Layout</string>
+    <string name="settings_layout_subtitle">Wie viele Spalten im Dashboard angezeigt werden.</string>
+    <string name="settings_layout_list">Liste</string>
+    <string name="settings_layout_grid">Raster</string>
+    <string name="settings_layout_compact">Kompakt</string>
+    <string name="settings_group_by_room_title">Nach Raum gruppieren</string>
+    <string name="settings_group_by_room_subtitle">Entitäten nach Bereich statt nach Gerätetyp organisieren.</string>
+
+    <string name="settings_haptic_title">Haptisches Feedback</string>
+    <string name="settings_haptic_subtitle">Vibrieren bei der Interaktion mit Schaltern und Reglern.</string>
+    <string name="settings_keep_screen_on_title">Bildschirm an lassen</string>
+    <string name="settings_keep_screen_on_subtitle">Verhindert, dass der Bildschirm bei geöffnetem Dashboard ausgeht.</string>
+    <string name="settings_keep_connected_title">Im Hintergrund verbunden bleiben</string>
+    <string name="settings_keep_connected_subtitle">Zeigt eine dauerhafte Benachrichtigung und hält die Echtzeitverbindung aufrecht, wenn die App nicht im Vordergrund ist.</string>
+    <string name="settings_refresh_interval_title">Aktualisierungsintervall (Detailansicht)</string>
+    <string name="settings_refresh_interval_subtitle">Wie oft Detailbildschirme aktuelle Sensorwerte abrufen.</string>
+    <string name="settings_refresh_interval_value">%1$ds</string>
+
+    <string name="settings_quick_tile_title">Kachel-Entität</string>
+    <string name="settings_quick_tile_subtitle">Füge die Domus-Kachel aus den Schnelleinstellungen deines Geräts hinzu, um die unten stehende Entität ohne Öffnen der App umzuschalten.</string>
+    <string name="settings_quick_tile_empty">Markiere eine Lampe, einen Schalter oder einen Lüfter als Favorit, um sie hier verfügbar zu machen.</string>
+
+    <string name="settings_app_lock_title">App-Sperre</string>
+    <string name="settings_app_lock_subtitle">Erfordert Fingerabdruck, Gesichtserkennung oder Geräte-PIN zum Öffnen von Domus.</string>
+
+    <string name="settings_debug_title">Debug-Infos anzeigen</string>
+    <string name="settings_debug_subtitle">Zeigt Zähler der Entitätsregistrierung im Dashboard-Titel an.</string>
+
+    <!-- NFC tags -->
+    <string name="nfc_section_title">NFC-Tags</string>
+    <string name="nfc_section_subtitle">Schreibe eine Szene oder ein Skript auf ein leeres NFC-Tag. Ein späteres Antippen mit dem Telefon aktiviert es sofort, auch wenn Domus nicht geöffnet ist.</string>
+    <string name="nfc_unavailable">Dieses Gerät unterstützt kein NFC.</string>
+    <string name="nfc_pick_scene_empty">Markiere eine Szene oder ein Skript als Favorit, um sie auf ein Tag zu schreiben.</string>
+    <string name="nfc_write_button">Auf Tag schreiben</string>
+    <string name="nfc_writing">Halte ein leeres NFC-Tag an die Rückseite deines Telefons…</string>
+    <string name="nfc_write_success">Tag geschrieben — tippe es jederzeit an, um \"%1$s\" auszuführen.</string>
+    <string name="nfc_write_failed">Tag konnte nicht beschrieben werden: %1$s</string>
+    <string name="nfc_triggered">%1$s aktiviert</string>
+
+    <!-- Geofencing -->
+    <string name="geofence_section_title">Standort-Geofence</string>
+    <string name="geofence_section_subtitle">Benachrichtigt Home Assistant, wenn du an einem Ort ankommst oder ihn verlässt, damit anwesenheitsbasierte Automatisierungen (wie \"alles ausschalten, wenn ich gehe\") automatisch funktionieren.</string>
+    <string name="geofence_permission_needed">Domus benötigt Standortzugriff, einschließlich \"Immer zulassen\", um Ankünfte und Abfahrten im Hintergrund zu erkennen.</string>
+    <string name="geofence_grant_button">Standortzugriff gewähren</string>
+    <string name="geofence_pick_entity_empty">Markiere eine person- oder device_tracker-Entität als Favorit, um sie bei Ankunft/Abfahrt zu aktualisieren.</string>
+    <string name="geofence_pick_entity_title">Zu aktualisierende Entität</string>
+    <string name="geofence_radius_title">Radius: %1$d m</string>
+    <string name="geofence_use_current_location">Aktuellen Standort verwenden</string>
+    <string name="geofence_no_location">Aktueller Standort konnte nicht ermittelt werden: %1$s</string>
+    <string name="geofence_no_fix_yet">Noch kein zwischengespeicherter Standort — öffne einmal Google Maps für ein GPS-Signal und versuche es erneut.</string>
+    <string name="geofence_enabled_title">Geofence aktivieren</string>
+    <string name="geofence_enabled_subtitle">Erfordert Standortzugriff; verbraucht dank Google-Play-Services-Geofencing wenig Akku.</string>
+    <string name="geofence_not_configured">Lege zuerst einen Standort und eine Entität fest.</string>
+
+    <!-- App lock -->
+    <string name="app_lock_prompt_title">Domus entsperren</string>
+    <string name="app_lock_locked_title">Domus ist gesperrt</string>
+    <string name="app_lock_unlock_button">Entsperren</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_get_started">Los geht\'s</string>
+    <string name="onboarding_page1_title">Willkommen bei Domus</string>
+    <string name="onboarding_page1_body">Ein nativer Material-3-Client für Home Assistant — gebaut für Geschwindigkeit und echte Android-Integration statt eines eingebetteten Web-Dashboards.</string>
+    <string name="onboarding_page2_title">Verbinde deine Instanz</string>
+    <string name="onboarding_page2_body">Melde dich mit deinem Home-Assistant-Benutzernamen und -Passwort an (2FA inklusive), oder füge ein langlebiges Zugriffstoken ein, wenn du das Anmeldeformular überspringen möchtest.</string>
+    <string name="onboarding_page3_title">Wähle, was angezeigt wird</string>
+    <string name="onboarding_page3_body">Wähle genau, welche Entitäten in deinem Dashboard erscheinen, gruppiert nach Typ, mit Echtzeit-Updates und Steuerung — statt einer Liste von allem.</string>
+
+    <!-- Connect screen -->
+    <string name="connect_title">Mit Home Assistant verbinden</string>
+    <string name="connect_tab_login">Anmelden</string>
+    <string name="connect_tab_token">Token</string>
+    <string name="connect_server_url_label">Server-URL</string>
+    <string name="connect_server_url_placeholder">https://deine-instanz.beispiel.com</string>
+    <string name="connect_token_label">Langlebiges Zugriffstoken</string>
+    <string name="connect_error_rejected">Verbindung abgelehnt — überprüfe URL und Token.</string>
+    <string name="connect_error_unreachable">Home Assistant nicht erreichbar: %1$s</string>
+    <string name="connect_continue">Weiter</string>
+    <string name="connect_connect">Verbinden</string>
+
+    <!-- OAuth login screen -->
+    <string name="oauth_login_title">Bei Home Assistant anmelden</string>
+    <string name="oauth_login_unknown_error">unbekannter Fehler</string>
+    <string name="oauth_login_page_failed">Seite konnte nicht geladen werden: %1$s</string>
+    <string name="oauth_login_cancelled">Anmeldung wurde abgebrochen oder verweigert.</string>
+    <string name="oauth_login_rejected">Home Assistant hat die neue Sitzung abgelehnt.</string>
+    <string name="oauth_login_failed">Anmeldung fehlgeschlagen: %1$s</string>
+
+    <!-- Camera detail -->
+    <string name="camera_load_failed">Kamerabild konnte nicht geladen werden</string>
+    <string name="camera_refresh_note">Aktualisiert alle %1$ds</string>
+
+    <!-- Entity picker -->
+    <string name="picker_title">Entitäten auswählen</string>
+    <string name="picker_selected_count">%1$d ausgewählt</string>
+    <string name="picker_save">Speichern</string>
+
+    <!-- Domain section labels -->
+    <string name="domain_light">Lampen</string>
+    <string name="domain_switch">Schalter</string>
+    <string name="domain_input_boolean">Virtuelle Schalter</string>
+    <string name="domain_fan">Lüfter</string>
+    <string name="domain_automation">Automatisierungen</string>
+    <string name="domain_sensor">Sensoren</string>
+    <string name="domain_climate">Klima</string>
+    <string name="domain_water_heater">Warmwasserbereiter</string>
+    <string name="domain_media_player">Mediaplayer</string>
+    <string name="domain_button">Tasten</string>
+    <string name="domain_lock">Schlösser</string>
+    <string name="domain_cover">Rollläden</string>
+    <string name="domain_garage_door">Garagentore</string>
+    <string name="domain_valve">Ventile</string>
+    <string name="domain_camera">Kameras</string>
+    <string name="domain_speaker">Lautsprecher</string>
+    <string name="domain_vacuum">Saugroboter</string>
+    <string name="domain_lawn_mower">Mähroboter</string>
+    <string name="domain_scene">Szenen</string>
+    <string name="domain_script">Skripte</string>
+    <string name="domain_number">Zahlen</string>
+    <string name="domain_select">Auswahlfelder</string>
+    <string name="domain_alarm_control_panel">Alarm</string>
+    <string name="domain_weather">Wetter</string>
+    <string name="domain_person">Personen</string>
+    <string name="domain_device_tracker">Anwesenheit</string>
+</resources>
