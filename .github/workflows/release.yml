@@ -72,13 +72,42 @@ jobs:
       - name: Install JetBrains JDK 21
         shell: bash
         run: |
-          url=$(curl -s "https://api.foojay.io/disco/v3.0/packages?jdk_version=21&distribution=jetbrains&architecture=x64&operating_system=windows&package_type=jdk&release_status=ga&latest=per_distro" | \
-            jq -r '.result[0].links.pkg_download_redirect // empty')
-          [ -n "$url" ] || { echo "JBR 21 not found"; exit 1; }
-          archive="$RUNNER_TEMP/jbr.zip"
+          response=$(curl -s "https://api.foojay.io/disco/v3.0/packages?jdk_version=21&distribution=jetbrains&architecture=x64&operating_system=windows&package_type=jdk&release_status=ga&latest=per_distro")
+          url=$(echo "$response" | jq -r '.result[0].links.pkg_download_redirect // empty')
+          archive_type=$(echo "$response" | jq -r '.result[0].archive_type // empty')
+          filename=$(echo "$response" | jq -r '.result[0].filename // empty')
+          echo "Resolved JBR package: filename=$filename archive_type=$archive_type"
+          if [ -z "$url" ]; then
+            echo "JBR 21 not found for windows/x64. Full API response:"
+            echo "$response"
+            exit 1
+          fi
+
+          archive="$RUNNER_TEMP/jbr_download"
+          http_code=$(curl -sL -w '%{http_code}' -o "$archive" "$url")
+          size=$(stat -c%s "$archive" 2>/dev/null || stat -f%z "$archive" 2>/dev/null || echo 0)
+          echo "Download: http_code=$http_code size=$size bytes"
+          if [ "$http_code" != "200" ] || [ "$size" -lt 1000000 ]; then
+            echo "Download looks wrong (expected a JDK archive of 100+ MB). First bytes:"
+            head -c 500 "$archive"
+            exit 1
+          fi
+
           extract_dir="$RUNNER_TEMP/jbr_extract"
-          curl -sL "$url" -o "$archive"
-          powershell -NoProfile -Command "Expand-Archive -Path '$archive' -DestinationPath '$extract_dir' -Force"
+          mkdir -p "$extract_dir"
+          case "$archive_type" in
+            zip)
+              powershell -NoProfile -Command "Expand-Archive -Path '$archive' -DestinationPath '$extract_dir' -Force"
+              ;;
+            tar.gz|tgz|targz)
+              tar -xzf "$archive" -C "$extract_dir"
+              ;;
+            *)
+              echo "Unrecognized archive_type '$archive_type', trying tar as a fallback"
+              tar -xf "$archive" -C "$extract_dir"
+              ;;
+          esac
+
           inner=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -1)
           [ -n "$inner" ] || { echo "JBR archive layout unexpected"; find "$extract_dir"; exit 1; }
           echo "JAVA_HOME=$inner" >> "$GITHUB_ENV"
