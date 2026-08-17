@@ -100,11 +100,13 @@ jobs:
               powershell -NoProfile -Command "Expand-Archive -Path '$archive' -DestinationPath '$extract_dir' -Force"
               ;;
             tar.gz|tgz|targz)
-              tar -xzf "$archive" -C "$extract_dir"
+              # --force-local: without it, GNU tar treats the "D:" in a Windows drive-letter
+              # path as a remote "host:path" and tries to rsh into a machine named "D".
+              tar --force-local -xzf "$archive" -C "$extract_dir"
               ;;
             *)
               echo "Unrecognized archive_type '$archive_type', trying tar as a fallback"
-              tar -xf "$archive" -C "$extract_dir"
+              tar --force-local -xf "$archive" -C "$extract_dir"
               ;;
           esac
 
