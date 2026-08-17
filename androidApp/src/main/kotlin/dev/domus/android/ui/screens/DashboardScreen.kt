@@ -367,14 +367,14 @@ fun DashboardScreen(
                                     key = { it.entityId },
                                     span = { entity ->
                                         // list (1 col): everything full-width
-                                        // grid2 (2 col): tiles=1, cards=2 (full-width)
+                                        // grid2 (2 col): tiles=1, cards=1 (half-width)
                                         // grid4 (4 col): tiles=1, cards=2 (half-width)
                                         val isTile = entity.domain in TILE_DOMAINS
                                         when {
                                             dashboardLayout == "list" -> GridItemSpan(maxLineSpan)
                                             isTile -> GridItemSpan(1)
                                             dashboardLayout == "grid4" -> GridItemSpan(2)
-                                            else -> GridItemSpan(maxLineSpan)
+                                            else -> GridItemSpan(1)
                                         }
                                     },
                                 ) { entity ->
@@ -385,7 +385,7 @@ fun DashboardScreen(
                                         EntityCard(
                                             entity = entity,
                                             onCallService = ::callService,
-                                            compact = dashboardLayout == "grid4",
+                                            compact = dashboardLayout != "list",
                                             onOpenDetail = when (entity.domain) {
                                                 "climate", "water_heater", "light", "switch", "media_player", "lock" -> {
                                                     { onOpenDetail(entity.entityId) }
