@@ -26,8 +26,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -51,6 +54,7 @@ fun ConnectScreen(
     var isConnecting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -64,7 +68,7 @@ fun ConnectScreen(
             contentDescription = null,
             modifier = Modifier.padding(bottom = DesignTokens.Spacing.md.dp),
         )
-        Text(text = "Connect to Home Assistant", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.connect_title), style = MaterialTheme.typography.headlineSmall)
 
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
@@ -76,22 +80,22 @@ fun ConnectScreen(
                 onClick = { selectedTab = 0; errorMessage = null },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             ) {
-                Text("Log in", maxLines = 1)
+                Text(stringResource(R.string.connect_tab_login), maxLines = 1)
             }
             SegmentedButton(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1; errorMessage = null },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             ) {
-                Text("Token", maxLines = 1)
+                Text(stringResource(R.string.connect_tab_token), maxLines = 1)
             }
         }
 
         OutlinedTextField(
             value = baseUrl,
             onValueChange = { baseUrl = it; errorMessage = null },
-            label = { Text("Server URL") },
-            placeholder = { Text("https://your-instance.example.com") },
+            label = { Text(stringResource(R.string.connect_server_url_label)) },
+            placeholder = { Text(stringResource(R.string.connect_server_url_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
@@ -105,7 +109,7 @@ fun ConnectScreen(
             OutlinedTextField(
                 value = token,
                 onValueChange = { token = it; errorMessage = null },
-                label = { Text("Long-lived access token") },
+                label = { Text(stringResource(R.string.connect_token_label)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -138,10 +142,10 @@ fun ConnectScreen(
                             HaSessionHolder.connect(session)
                             onConnected(config)
                         } else {
-                            errorMessage = "Connection rejected — check the URL and token."
+                            errorMessage = context.getString(R.string.connect_error_rejected)
                         }
                     } catch (e: Exception) {
-                        errorMessage = "Couldn't reach Home Assistant: ${e.message}"
+                        errorMessage = context.getString(R.string.connect_error_unreachable, e.message)
                     } finally {
                         isConnecting = false
                     }
@@ -154,7 +158,7 @@ fun ConnectScreen(
             if (isConnecting) {
                 CircularProgressIndicator(modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp))
             }
-            Text(if (selectedTab == 0) "Continue" else "Connect")
+            Text(stringResource(if (selectedTab == 0) R.string.connect_continue else R.string.connect_connect))
         }
     }
 }

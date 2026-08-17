@@ -30,7 +30,10 @@ import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonPin
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import dev.domus.android.R
 
 /** Best-effort icon per HA entity domain; falls back to a generic device icon. */
 fun iconForDomain(domain: String): ImageVector = when (domain) {
@@ -60,41 +63,47 @@ fun iconForDomain(domain: String): ImageVector = when (domain) {
     else -> Icons.Filled.DeviceUnknown
 }
 
-private val DOMAIN_LABELS = mapOf(
-    "light" to "Lights",
-    "switch" to "Switches",
-    "input_boolean" to "Toggles",
-    "fan" to "Fans",
-    "automation" to "Automations",
-    "binary_sensor" to "Sensors",
-    "sensor" to "Sensors",
-    "climate" to "Climate",
-    "water_heater" to "Water Heaters",
-    "media_player" to "Media Players",
-    "button" to "Buttons",
-    "lock" to "Locks",
-    "cover" to "Covers",
-    "garage_door" to "Garage Doors",
-    "valve" to "Valves",
-    "camera" to "Cameras",
-    "speaker" to "Speakers",
-    "vacuum" to "Vacuums",
-    "lawn_mower" to "Lawn Mowers",
-    "scene" to "Scenes",
-    "script" to "Scripts",
-    "number" to "Numbers",
-    "input_number" to "Numbers",
-    "select" to "Selectors",
-    "input_select" to "Selectors",
-    "alarm_control_panel" to "Alarm",
-    "weather" to "Weather",
-    "person" to "People",
-    "device_tracker" to "Presence",
+private val DOMAIN_LABEL_RES = mapOf(
+    "light" to R.string.domain_light,
+    "switch" to R.string.domain_switch,
+    "input_boolean" to R.string.domain_input_boolean,
+    "fan" to R.string.domain_fan,
+    "automation" to R.string.domain_automation,
+    "binary_sensor" to R.string.domain_sensor,
+    "sensor" to R.string.domain_sensor,
+    "climate" to R.string.domain_climate,
+    "water_heater" to R.string.domain_water_heater,
+    "media_player" to R.string.domain_media_player,
+    "button" to R.string.domain_button,
+    "lock" to R.string.domain_lock,
+    "cover" to R.string.domain_cover,
+    "garage_door" to R.string.domain_garage_door,
+    "valve" to R.string.domain_valve,
+    "camera" to R.string.domain_camera,
+    "speaker" to R.string.domain_speaker,
+    "vacuum" to R.string.domain_vacuum,
+    "lawn_mower" to R.string.domain_lawn_mower,
+    "scene" to R.string.domain_scene,
+    "script" to R.string.domain_script,
+    "number" to R.string.domain_number,
+    "input_number" to R.string.domain_number,
+    "select" to R.string.domain_select,
+    "input_select" to R.string.domain_select,
+    "alarm_control_panel" to R.string.domain_alarm_control_panel,
+    "weather" to R.string.domain_weather,
+    "person" to R.string.domain_person,
+    "device_tracker" to R.string.domain_device_tracker,
 )
 
-/** Human-readable section title for a domain, e.g. "binary_sensor" -> "Sensors". */
+/** String resource id for a domain's section title, or null for an unmapped/exotic domain. */
+fun domainLabelRes(domain: String): Int? = DOMAIN_LABEL_RES[domain]
+
+/** Human-readable section title for a domain, e.g. "binary_sensor" -> "Sensors". Must be called
+ *  directly from composable code (not from inside a plain lambda like a sort comparator). */
+@Composable
 fun domainLabel(domain: String): String =
-    DOMAIN_LABELS[domain] ?: domain.replace('_', ' ').replaceFirstChar { it.uppercase() }
+    domainLabelRes(domain)?.let { stringResource(it) }
+        ?: domain.replace('_', ' ').replaceFirstChar { it.uppercase() }
 
 /** Icon per HVAC mode, matching the convention most HA thermostat cards use. */
 fun iconForHvacMode(mode: String): ImageVector = when (mode.lowercase()) {

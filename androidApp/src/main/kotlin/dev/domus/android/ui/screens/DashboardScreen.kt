@@ -79,8 +79,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaEntityState
@@ -179,6 +182,7 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
+    val context = LocalContext.current
 
     DisposableEffect(keepScreenOn) {
         view.keepScreenOn = keepScreenOn
@@ -194,7 +198,7 @@ fun DashboardScreen(
             try {
                 session.repository.refresh()
             } catch (e: Exception) {
-                errorMessage = "Couldn't load entities: ${e.message}"
+                errorMessage = context.getString(R.string.dashboard_error_load_entities, e.message)
             }
         }
     }
@@ -205,7 +209,7 @@ fun DashboardScreen(
             try {
                 session.repository.refresh()
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't refresh: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.dashboard_error_refresh, e.message))
             } finally {
                 isRefreshing = false
             }
@@ -213,6 +217,13 @@ fun DashboardScreen(
     }
 
     val useRoomGrouping = groupByRoom && areaEntityMap.isNotEmpty()
+    val otherRoomLabel = stringResource(R.string.dashboard_other_room)
+    // domainLabel() is @Composable, so resolve every label directly in composable scope (a
+    // plain for-loop, not inside groupBy's lambda) before grouping/sorting by it.
+    val domainLabels = HashMap<String, String>()
+    for (domain in entities.values.map { it.domain }.distinct()) {
+        domainLabels[domain] = domainLabel(domain)
+    }
     val groupedEntities = entities.values
         .filter { it.entityId in favoriteEntityIds }
         .filter { entity ->
@@ -222,15 +233,15 @@ fun DashboardScreen(
         }
         .sortedBy { it.friendlyName }
         .groupBy { entity ->
-            if (useRoomGrouping) areaEntityMap[entity.entityId] ?: "Other"
-            else domainLabel(entity.domain)
+            if (useRoomGrouping) areaEntityMap[entity.entityId] ?: otherRoomLabel
+            else domainLabels[entity.domain] ?: entity.domain
         }
         .let { groups ->
             if (useRoomGrouping) {
                 groups.toSortedMap { a, b ->
                     when {
-                        a == "Other" -> 1
-                        b == "Other" -> -1
+                        a == otherRoomLabel -> 1
+                        b == otherRoomLabel -> -1
                         else -> a.compareTo(b)
                     }
                 }
@@ -245,7 +256,9 @@ fun DashboardScreen(
             try {
                 session.repository.callService(call)
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update ${call.entityId}: ${e.message}")
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.dashboard_error_update, call.entityId, e.message),
+                )
             }
         }
     }
@@ -258,7 +271,7 @@ fun DashboardScreen(
                         TextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search entities…") },
+                            placeholder = { Text(stringResource(R.string.dashboard_search_placeholder)) },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
@@ -271,7 +284,7 @@ fun DashboardScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { isSearchActive = false; searchQuery = "" }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Close search")
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.dashboard_close_search))
                         }
                     },
                 )
@@ -279,7 +292,7 @@ fun DashboardScreen(
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Domus")
+                            Text(stringResource(R.string.app_name))
                             if (showDebugDiag) {
                                 Text(
                                     text = registryDiag,
@@ -291,16 +304,16 @@ fun DashboardScreen(
                     },
                     actions = {
                         IconButton(onClick = { isSearchActive = true }) {
-                            Icon(imageVector = Icons.Filled.Search, contentDescription = "Search")
+                            Icon(imageVector = Icons.Filled.Search, contentDescription = stringResource(R.string.common_search))
                         }
                         IconButton(onClick = onEditEntities) {
-                            Icon(imageVector = Icons.Filled.Edit, contentDescription = "Choose entities")
+                            Icon(imageVector = Icons.Filled.Edit, contentDescription = stringResource(R.string.common_choose_entities))
                         }
                         IconButton(onClick = onOpenSettings) {
-                            Icon(imageVector = Icons.Filled.Settings, contentDescription = "Settings")
+                            Icon(imageVector = Icons.Filled.Settings, contentDescription = stringResource(R.string.common_settings))
                         }
                         IconButton(onClick = onLogout) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = "Disconnect")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = stringResource(R.string.dashboard_disconnect))
                         }
                     },
                 )
@@ -338,12 +351,12 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(text = "No entities chosen yet.")
+                        Text(text = stringResource(R.string.dashboard_empty_title))
                         Button(
                             onClick = onEditEntities,
                             modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
                         ) {
-                            Text("Choose entities")
+                            Text(stringResource(R.string.common_choose_entities))
                         }
                     }
 
@@ -664,13 +677,13 @@ private fun EntityCard(
                     LawnMowerControls(entity = entity, onCallService = onCallService)
                 }
                 if (entity.domain == "scene") {
-                    ActionButton(entity = entity, label = "Activate", domain = "scene", service = "turn_on", onCallService = onCallService)
+                    ActionButton(entity = entity, label = stringResource(R.string.action_activate), domain = "scene", service = "turn_on", onCallService = onCallService)
                 }
                 if (entity.domain == "script") {
-                    ActionButton(entity = entity, label = "Run", domain = "script", service = "turn_on", onCallService = onCallService)
+                    ActionButton(entity = entity, label = stringResource(R.string.action_run), domain = "script", service = "turn_on", onCallService = onCallService)
                 }
                 if (entity.domain == "button") {
-                    ActionButton(entity = entity, label = "Press", domain = "button", service = "press", onCallService = onCallService)
+                    ActionButton(entity = entity, label = stringResource(R.string.action_press), domain = "button", service = "press", onCallService = onCallService)
                 }
                 if (entity.domain == "number" || entity.domain == "input_number") {
                     NumberSlider(entity = entity, onCallService = onCallService)
@@ -749,7 +762,7 @@ private fun TemperatureControls(entity: HaEntityState, onCallService: (HaService
                 onClick = { setTemp(target - step) },
                 enabled = target > min,
             ) {
-                Icon(Icons.Filled.Remove, contentDescription = "Decrease temperature")
+                Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.common_decrease_temperature))
             }
             Text(
                 text = "%.1f${entity.temperatureUnit}".format(target),
@@ -759,7 +772,7 @@ private fun TemperatureControls(entity: HaEntityState, onCallService: (HaService
                 onClick = { setTemp(target + step) },
                 enabled = target < max,
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Increase temperature")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.common_increase_temperature))
             }
         }
     }
@@ -805,19 +818,19 @@ private fun OpenCloseControls(entity: HaEntityState, domain: String, onCallServi
     ) {
         entity.currentPosition?.let { position ->
             Text(
-                text = "Position: $position%",
+                text = stringResource(R.string.dashboard_cover_position, position),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
         }
         IconButton(onClick = { onCallService(HaServiceCall(domain, openService, entity.entityId)) }) {
-            Icon(imageVector = Icons.Filled.KeyboardArrowUp, contentDescription = "Open")
+            Icon(imageVector = Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.common_open))
         }
         IconButton(onClick = { onCallService(HaServiceCall(domain, stopService, entity.entityId)) }) {
-            Icon(imageVector = Icons.Filled.Stop, contentDescription = "Stop")
+            Icon(imageVector = Icons.Filled.Stop, contentDescription = stringResource(R.string.common_stop))
         }
         IconButton(onClick = { onCallService(HaServiceCall(domain, closeService, entity.entityId)) }) {
-            Icon(imageVector = Icons.Filled.KeyboardArrowDown, contentDescription = "Close")
+            Icon(imageVector = Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.common_close))
         }
     }
 }
@@ -856,14 +869,14 @@ private fun AlarmControls(entity: HaEntityState, onCallService: (HaServiceCall) 
     ) {
         if (isDisarmed) {
             TextButton(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_arm_home", entity.entityId)) }) {
-                Text("Arm home")
+                Text(stringResource(R.string.alarm_arm_home))
             }
             TextButton(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_arm_away", entity.entityId)) }) {
-                Text("Arm away")
+                Text(stringResource(R.string.alarm_arm_away))
             }
         } else {
             Button(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_disarm", entity.entityId)) }) {
-                Text("Disarm")
+                Text(stringResource(R.string.alarm_disarm))
             }
         }
     }
@@ -877,9 +890,9 @@ private fun VacuumControls(entity: HaEntityState, onCallService: (HaServiceCall)
             .padding(top = DesignTokens.Spacing.sm.dp),
         horizontalArrangement = Arrangement.End,
     ) {
-        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "start", entity.entityId)) }) { Text("Start") }
-        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "pause", entity.entityId)) }) { Text("Pause") }
-        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "return_to_base", entity.entityId)) }) { Text("Dock") }
+        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "start", entity.entityId)) }) { Text(stringResource(R.string.common_start)) }
+        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "pause", entity.entityId)) }) { Text(stringResource(R.string.common_pause)) }
+        TextButton(onClick = { onCallService(HaServiceCall("vacuum", "return_to_base", entity.entityId)) }) { Text(stringResource(R.string.common_dock)) }
     }
 }
 
@@ -891,9 +904,9 @@ private fun LawnMowerControls(entity: HaEntityState, onCallService: (HaServiceCa
             .padding(top = DesignTokens.Spacing.sm.dp),
         horizontalArrangement = Arrangement.End,
     ) {
-        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "start_mowing", entity.entityId)) }) { Text("Start") }
-        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "pause", entity.entityId)) }) { Text("Pause") }
-        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "dock", entity.entityId)) }) { Text("Dock") }
+        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "start_mowing", entity.entityId)) }) { Text(stringResource(R.string.common_start)) }
+        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "pause", entity.entityId)) }) { Text(stringResource(R.string.common_pause)) }
+        TextButton(onClick = { onCallService(HaServiceCall("lawn_mower", "dock", entity.entityId)) }) { Text(stringResource(R.string.common_dock)) }
     }
 }
 
@@ -960,8 +973,12 @@ private fun SelectDropdown(entity: HaEntityState, onCallService: (HaServiceCall)
                 .clickable { expanded = true },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = "Select option", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "Choose option")
+            Text(
+                text = stringResource(R.string.dashboard_select_option),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.dashboard_choose_option))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->

@@ -27,8 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaEntityState
@@ -71,16 +73,16 @@ fun EntityPickerScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Choose entities")
+                        Text(stringResource(R.string.picker_title))
                         Text(
-                            text = "${selection.size} selected",
+                            text = stringResource(R.string.picker_selected_count, selection.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
                 actions = {
-                    TextButton(onClick = { onSave(selection) }) { Text("Save") }
+                    TextButton(onClick = { onSave(selection) }) { Text(stringResource(R.string.picker_save)) }
                 },
             )
         },
@@ -93,21 +95,28 @@ fun EntityPickerScreen(
                 CircularProgressIndicator()
             }
         } else {
-            val groupedEntities = entities.values
+            val ungroupedEntities = entities.values
                 .filter { entity ->
                     query.isBlank() ||
                         entity.friendlyName.contains(query, ignoreCase = true) ||
                         entity.entityId.contains(query, ignoreCase = true)
                 }
                 .sortedBy { it.friendlyName }
+            // domainLabel() is @Composable, so resolve each label directly in composable scope
+            // (a plain for-loop, not inside the sort comparator lambda below) before sorting.
+            val domainLabels = HashMap<String, String>()
+            for (domain in ungroupedEntities.map { it.domain }.distinct()) {
+                domainLabels[domain] = domainLabel(domain)
+            }
+            val groupedEntities = ungroupedEntities
                 .groupBy { it.domain }
-                .toSortedMap(compareBy { domainLabel(it) })
+                .toSortedMap(compareBy { domainLabels[it] ?: it })
 
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search") },
+                    label = { Text(stringResource(R.string.common_search)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -116,7 +125,7 @@ fun EntityPickerScreen(
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     groupedEntities.forEach { (domain, entitiesInGroup) ->
                         item(key = "header_$domain") {
-                            DomainHeader(domainLabel(domain))
+                            DomainHeader(domainLabels[domain] ?: domain)
                         }
                         items(entitiesInGroup, key = { it.entityId }) { entity ->
                             EntityPickerRow(

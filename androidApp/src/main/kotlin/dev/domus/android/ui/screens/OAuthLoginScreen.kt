@@ -21,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import dev.domus.android.R
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.shared.api.HaOAuthClient
 import dev.domus.shared.createHttpClient
@@ -53,10 +55,13 @@ fun OAuthLoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sign in to Home Assistant") },
+                title = { Text(stringResource(R.string.oauth_login_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -76,13 +81,16 @@ fun OAuthLoginScreen(
                             error: WebResourceError,
                         ) {
                             if (!request.isForMainFrame) return
-                            val description = error.description?.toString() ?: "unknown error"
+                            val description = error.description?.toString()
+                                ?: context.getString(R.string.oauth_login_unknown_error)
                             // ERR_LOCAL_NETWORK_PERMISSION_MISSING (-234) fires on Android 16+
                             // when the domain resolves to a private IP and the system permission
                             // ACCESS_LOCAL_NETWORK is absent. Showing a clear message here is a
                             // fallback; the manifest permission should prevent this in practice.
                             scope.launch {
-                                snackbarHostState.showSnackbar("Page failed to load: $description")
+                                snackbarHostState.showSnackbar(
+                                    context.getString(R.string.oauth_login_page_failed, description),
+                                )
                             }
                         }
 
@@ -97,7 +105,9 @@ fun OAuthLoginScreen(
                             val code = request.url.getQueryParameter("code")
                             scope.launch {
                                 if (code == null) {
-                                    snackbarHostState.showSnackbar("Sign-in was cancelled or denied.")
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.oauth_login_cancelled),
+                                    )
                                     return@launch
                                 }
                                 try {
@@ -115,10 +125,14 @@ fun OAuthLoginScreen(
                                         HaSessionHolder.connect(session)
                                         onConnected(config)
                                     } else {
-                                        snackbarHostState.showSnackbar("Home Assistant rejected the new session.")
+                                        snackbarHostState.showSnackbar(
+                                            context.getString(R.string.oauth_login_rejected),
+                                        )
                                     }
                                 } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar("Sign-in failed: ${e.message}")
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.oauth_login_failed, e.message),
+                                    )
                                 }
                             }
                             return true

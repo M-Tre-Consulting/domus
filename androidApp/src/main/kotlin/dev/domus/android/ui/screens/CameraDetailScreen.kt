@@ -30,8 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.friendlyName
@@ -81,7 +83,10 @@ fun CameraDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -106,14 +111,14 @@ fun CameraDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                     )
                     loadFailed -> Icon(
                         imageVector = Icons.Filled.BrokenImage,
-                        contentDescription = "Couldn't load camera image",
+                        contentDescription = stringResource(R.string.camera_load_failed),
                         tint = MaterialTheme.colorScheme.error,
                     )
                     else -> CircularProgressIndicator()
                 }
             }
             Text(
-                text = "Updates every ${SNAPSHOT_REFRESH_MS / 1000}s",
+                text = stringResource(R.string.camera_refresh_note, SNAPSHOT_REFRESH_MS / 1000),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = DesignTokens.Spacing.sm.dp),

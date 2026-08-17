@@ -29,36 +29,27 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.shared.DesignTokens
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
     val icon: ImageVector,
-    val title: String,
-    val body: String,
+    val titleRes: Int,
+    val bodyRes: Int,
 )
 
 private val PAGES = listOf(
+    OnboardingPage(Icons.Filled.Home, R.string.onboarding_page1_title, R.string.onboarding_page1_body),
     OnboardingPage(
-        icon = Icons.Filled.Home,
-        title = "Welcome to Domus",
-        body = "A native Material 3 client for Home Assistant — built for speed and " +
-            "real Android integration instead of a wrapped web dashboard.",
+        Icons.AutoMirrored.Filled.Login,
+        R.string.onboarding_page2_title,
+        R.string.onboarding_page2_body,
     ),
-    OnboardingPage(
-        icon = Icons.AutoMirrored.Filled.Login,
-        title = "Connect your instance",
-        body = "Sign in with your Home Assistant username and password (2FA included), " +
-            "or paste a long-lived access token if you'd rather skip the login form.",
-    ),
-    OnboardingPage(
-        icon = Icons.Filled.Tune,
-        title = "Choose what to show",
-        body = "Pick exactly which entities show up on your dashboard, grouped by " +
-            "type, with live updates and controls — not a dump of everything.",
-    ),
+    OnboardingPage(Icons.Filled.Tune, R.string.onboarding_page3_title, R.string.onboarding_page3_body),
 )
 
 @Composable
@@ -72,7 +63,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(DesignTokens.Spacing.md.dp),
             horizontalArrangement = Arrangement.End,
         ) {
-            TextButton(onClick = onFinished) { Text("Skip") }
+            TextButton(onClick = onFinished) { Text(stringResource(R.string.onboarding_skip)) }
         }
 
         HorizontalPager(
@@ -93,12 +84,12 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     modifier = Modifier.size(64.dp),
                 )
                 Text(
-                    text = onboardingPage.title,
+                    text = stringResource(onboardingPage.titleRes),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(top = DesignTokens.Spacing.lg.dp),
                 )
                 Text(
-                    text = onboardingPage.body,
+                    text = stringResource(onboardingPage.bodyRes),
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = DesignTokens.Spacing.md.dp),
@@ -140,7 +131,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                 .fillMaxWidth()
                 .padding(DesignTokens.Spacing.lg.dp),
         ) {
-            Text(if (isLastPage) "Get started" else "Next")
+            Text(stringResource(if (isLastPage) R.string.onboarding_get_started else R.string.onboarding_next))
         }
     }
 }
