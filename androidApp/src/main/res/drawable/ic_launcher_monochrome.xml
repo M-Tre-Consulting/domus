@@ -4,11 +4,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Same house mark as ic_launcher_foreground, minus the accent dot: themed icons (Android
+         13+) recolor a single flat alpha shape, so no secondary color here. -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
         android:pathData="
-            M54,26 L82,48 L74,48 L74,74 A6,6 0 0 1 68,80 L40,80 A6,6 0 0 1 34,74
-            L34,48 L26,48 Z
+            M50,26 L58,26 L80,46 L80,74 A6,6 0 0 1 74,80 L34,80 A6,6 0 0 1 28,74
+            L28,46 Z
             M48,80 V66 A4,4 0 0 1 52,62 H56 A4,4 0 0 1 60,66 V80 Z" />
 </vector>

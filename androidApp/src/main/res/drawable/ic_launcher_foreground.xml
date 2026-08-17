@@ -5,15 +5,19 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <!--
-      Single house silhouette (roof + walls, rounded bottom corners) with a door cut out
-      via even-odd fill, so the background color shows through — a flat, single-glyph
-      home mark instead of two stacked shapes.
+      House mark v2: a bolder rounded-corner pentagon (flat-cut roof peak instead of a sharp
+      point, rounded base corners) with a rounded-arch door cut out via even-odd fill, so the
+      background gradient shows through — plus a small warm dot glowing in the doorway like a
+      porch light left on, for a touch of color/personality beyond a flat white silhouette.
     -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
         android:pathData="
-            M54,26 L82,48 L74,48 L74,74 A6,6 0 0 1 68,80 L40,80 A6,6 0 0 1 34,74
-            L34,48 L26,48 Z
+            M50,26 L58,26 L80,46 L80,74 A6,6 0 0 1 74,80 L34,80 A6,6 0 0 1 28,74
+            L28,46 Z
             M48,80 V66 A4,4 0 0 1 52,62 H56 A4,4 0 0 1 60,66 V80 Z" />
+    <path
+        android:fillColor="#FFC857"
+        android:pathData="M51,73 A3,3 0 1 0 57,73 A3,3 0 1 0 51,73 Z" />
 </vector>
