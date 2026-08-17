@@ -135,7 +135,7 @@ private val ACTIVE_STATES = setOf(
 )
 
 /** Whether an entity is in a state worth visually highlighting (lit up, running, unlocked, open...). */
-private fun isActiveState(domain: String, state: String): Boolean {
+internal fun isActiveState(domain: String, state: String): Boolean {
     val s = state.lowercase()
     return when (domain) {
         "lock" -> s == "unlocked"
@@ -411,7 +411,7 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DomainHeader(label: String) {
+internal fun DomainHeader(label: String) {
     Text(
         text = label,
         style = MaterialTheme.typography.titleMedium,
@@ -423,7 +423,7 @@ private fun DomainHeader(label: String) {
 }
 
 @Composable
-private fun EntityIconBadge(
+internal fun EntityIconBadge(
     domain: String,
     isActive: Boolean,
     modifier: Modifier = Modifier,

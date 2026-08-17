@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,12 +27,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
+import dev.domus.shared.model.HaEntityState
 import dev.domus.shared.model.friendlyName
+import dev.domus.shared.model.unitOfMeasurement
 
-/** Lets the user choose which entities show up on the dashboard. */
+/** A short, human-readable summary of the entity's current value, e.g. "On", "21.5 °C", "Home". */
+private fun previewText(entity: HaEntityState): String {
+    val label = entity.state.toDisplayLabel()
+    val unit = entity.unitOfMeasurement
+    return if (!unit.isNullOrBlank() && entity.state.toDoubleOrNull() != null) "$label $unit" else label
+}
+
+/** Lets the user choose which entities show up on the dashboard, grouped by domain with an
+ *  icon and a live-state preview so entities are recognizable at a glance instead of just a
+ *  bare list of entity IDs. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntityPickerScreen(
@@ -50,10 +62,23 @@ fun EntityPickerScreen(
         }
     }
 
+    fun toggle(entityId: String) {
+        selection = if (entityId in selection) selection - entityId else selection + entityId
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Choose entities") },
+                title = {
+                    Column {
+                        Text("Choose entities")
+                        Text(
+                            text = "${selection.size} selected",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 actions = {
                     TextButton(onClick = { onSave(selection) }) { Text("Save") }
                 },
@@ -68,13 +93,15 @@ fun EntityPickerScreen(
                 CircularProgressIndicator()
             }
         } else {
-            val filteredEntities = entities.values
+            val groupedEntities = entities.values
                 .filter { entity ->
                     query.isBlank() ||
                         entity.friendlyName.contains(query, ignoreCase = true) ||
                         entity.entityId.contains(query, ignoreCase = true)
                 }
                 .sortedBy { it.friendlyName }
+                .groupBy { it.domain }
+                .toSortedMap(compareBy { domainLabel(it) })
 
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 OutlinedTextField(
@@ -87,45 +114,61 @@ fun EntityPickerScreen(
                         .padding(horizontal = DesignTokens.Spacing.md.dp, vertical = DesignTokens.Spacing.sm.dp),
                 )
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(filteredEntities, key = { it.entityId }) { entity ->
-                        val isSelected = entity.entityId in selection
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selection = if (isSelected) {
-                                        selection - entity.entityId
-                                    } else {
-                                        selection + entity.entityId
-                                    }
-                                }
-                                .padding(
-                                    horizontal = DesignTokens.Spacing.md.dp,
-                                    vertical = DesignTokens.Spacing.sm.dp,
-                                ),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(
-                                    checked = isSelected,
-                                    onCheckedChange = { checked ->
-                                        selection = if (checked) {
-                                            selection + entity.entityId
-                                        } else {
-                                            selection - entity.entityId
-                                        }
-                                    },
-                                )
-                                Column(modifier = Modifier.padding(start = DesignTokens.Spacing.sm.dp)) {
-                                    Text(text = entity.friendlyName, style = MaterialTheme.typography.bodyMedium)
-                                    Text(text = entity.entityId, style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
+                    groupedEntities.forEach { (domain, entitiesInGroup) ->
+                        item(key = "header_$domain") {
+                            DomainHeader(domainLabel(domain))
+                        }
+                        items(entitiesInGroup, key = { it.entityId }) { entity ->
+                            EntityPickerRow(
+                                entity = entity,
+                                isSelected = entity.entityId in selection,
+                                onToggle = { toggle(entity.entityId) },
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EntityPickerRow(
+    entity: HaEntityState,
+    isSelected: Boolean,
+    onToggle: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(horizontal = DesignTokens.Spacing.md.dp, vertical = DesignTokens.Spacing.xs.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        EntityIconBadge(
+            domain = entity.domain,
+            isActive = isActiveState(entity.domain, entity.state),
+            size = 36,
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = DesignTokens.Spacing.sm.dp),
+        ) {
+            Text(
+                text = entity.friendlyName,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = previewText(entity),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Checkbox(checked = isSelected, onCheckedChange = { onToggle() })
     }
 }
