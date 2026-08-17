@@ -3,6 +3,10 @@ package dev.domus.android.ui.screens
 import android.content.ComponentName
 import android.service.quicksettings.TileService
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -14,10 +18,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -35,8 +41,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +52,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -112,41 +117,19 @@ fun SettingsScreen(
             )
         },
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = DesignTokens.Spacing.md.dp, vertical = DesignTokens.Spacing.sm.dp),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm.dp),
-            ) {
-                SettingsSection.entries.forEachIndexed { index, section ->
-                    FilterChip(
-                        selected = selectedSection == index,
-                        onClick = { selectedSection = index },
-                        label = { Text(stringResource(section.labelRes)) },
-                        leadingIcon = { Icon(section.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        shape = CircleShape,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    )
-                }
-            }
-
-            HorizontalDivider()
-
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             AnimatedContent(
                 targetState = selectedSection,
                 label = "settings-section",
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
+                modifier = Modifier.fillMaxSize(),
             ) { section ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(DesignTokens.Spacing.md.dp),
+                        .padding(DesignTokens.Spacing.md.dp)
+                        .padding(bottom = 88.dp),
                 ) {
                     when (SettingsSection.entries[section]) {
                         SettingsSection.APPEARANCE -> AppearanceSection(settingsStore)
@@ -157,6 +140,88 @@ fun SettingsScreen(
                         SettingsSection.ADVANCED -> AdvancedSection(settingsStore)
                     }
                 }
+            }
+
+            SettingsPillNav(
+                selected = selectedSection,
+                onSelect = { selectedSection = it },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = DesignTokens.Spacing.lg.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Floating capsule dock that switches between settings sections: unselected items are icon-only
+ * circles, the selected one morphs to show its label too — a hand-built stand-in for Material 3's
+ * upcoming FloatingToolbar, which isn't public API yet in the material3 version this app can pull.
+ */
+@Composable
+private fun SettingsPillNav(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 3.dp,
+        shadowElevation = 8.dp,
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsSection.entries.forEachIndexed { index, section ->
+                PillNavItem(
+                    section = section,
+                    isSelected = index == selected,
+                    onClick = { onSelect(index) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PillNavItem(
+    section: SettingsSection,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "pillNavColor",
+    )
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val label = stringResource(section.labelRes)
+
+    Surface(
+        shape = CircleShape,
+        color = containerColor,
+        onClick = onClick,
+        modifier = Modifier.animateContentSize(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = section.icon,
+                contentDescription = if (isSelected) null else label,
+                tint = contentColor,
+                modifier = Modifier.size(22.dp),
+            )
+            if (isSelected) {
+                Spacer(Modifier.width(8.dp))
+                Text(text = label, color = contentColor, style = MaterialTheme.typography.labelLarge)
             }
         }
     }
