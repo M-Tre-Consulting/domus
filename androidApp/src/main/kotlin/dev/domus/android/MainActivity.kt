@@ -44,6 +44,7 @@ import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.android.data.OnboardingStore
 import dev.domus.android.data.SettingsStore
+import dev.domus.android.ui.screens.CameraDetailScreen
 import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
 import dev.domus.android.ui.screens.DashboardScreen
@@ -111,6 +112,7 @@ object Routes {
     const val SWITCH_DETAIL = "switch_detail"
     const val MEDIA_PLAYER_DETAIL = "media_player_detail"
     const val LOCK_DETAIL = "lock_detail"
+    const val CAMERA_DETAIL = "camera_detail"
     const val ENTITY_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
@@ -320,6 +322,7 @@ private fun DomusNavHost() {
                                 "switch" -> navController.navigate("${Routes.SWITCH_DETAIL}/$entityId")
                                 "media_player" -> navController.navigate("${Routes.MEDIA_PLAYER_DETAIL}/$entityId")
                                 "lock" -> navController.navigate("${Routes.LOCK_DETAIL}/$entityId")
+                                "camera" -> navController.navigate("${Routes.CAMERA_DETAIL}/$entityId")
                                 else -> {}
                             }
                         },
@@ -399,6 +402,20 @@ private fun DomusNavHost() {
                 }
             } else {
                 LockDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+            }
+        }
+        composable(
+            route = "${Routes.CAMERA_DETAIL}/{${Routes.ENTITY_DETAIL_ARG}}",
+            arguments = listOf(navArgument(Routes.ENTITY_DETAIL_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val entityId = backStackEntry.arguments?.getString(Routes.ENTITY_DETAIL_ARG)
+            val session = HaSessionHolder.session
+            if (session == null || entityId == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.CAMERA_DETAIL) { inclusive = true } }
+                }
+            } else {
+                CameraDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {

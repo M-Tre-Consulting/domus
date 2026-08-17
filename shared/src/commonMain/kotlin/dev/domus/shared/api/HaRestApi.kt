@@ -103,4 +103,15 @@ class HaRestApi(
         }
         return response.status.isSuccess()
     }
+
+    /** A single still JPEG frame from a `camera.*` entity's snapshot proxy. */
+    suspend fun getCameraSnapshot(entityId: String): ByteArray {
+        val response = client.get("$baseUrl/api/camera_proxy/$entityId") {
+            header("Authorization", "Bearer ${tokenProvider.accessToken()}")
+        }
+        if (!response.status.isSuccess()) {
+            throw HaApiException("Failed to fetch camera snapshot: $entityId", response.status.value)
+        }
+        return response.body()
+    }
 }

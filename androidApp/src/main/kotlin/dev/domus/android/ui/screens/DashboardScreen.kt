@@ -392,7 +392,7 @@ fun DashboardScreen(
                                             onCallService = ::callService,
                                             compact = dashboardLayout != "list",
                                             onOpenDetail = when (entity.domain) {
-                                                "climate", "water_heater", "light", "switch", "media_player", "lock" -> {
+                                                "climate", "water_heater", "light", "switch", "media_player", "lock", "camera" -> {
                                                     { onOpenDetail(entity.entityId) }
                                                 }
                                                 else -> null
