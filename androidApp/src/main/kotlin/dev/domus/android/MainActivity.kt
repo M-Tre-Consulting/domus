@@ -57,6 +57,7 @@ import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.screens.SettingsScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
+import dev.domus.android.widget.DomusWidget
 import dev.domus.shared.api.HaApiException
 import dev.domus.shared.api.HaOAuthException
 import dev.domus.shared.data.HaSession
@@ -296,6 +297,11 @@ private fun DomusNavHost() {
                                 DomusShortcuts.update(context.applicationContext, favorites)
                             } catch (_: Exception) {
                                 // Best-effort: e.g. ShortcutManager rate limit. Never worth crashing over.
+                            }
+                            try {
+                                DomusWidget.updateAll(context.applicationContext)
+                            } catch (_: Exception) {
+                                // Best-effort: no widget instances placed, etc.
                             }
                         }
                 }
