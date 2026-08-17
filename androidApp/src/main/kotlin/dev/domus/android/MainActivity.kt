@@ -422,6 +422,8 @@ private fun DomusNavHost() {
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 settingsStore = settingsStore,
+                session = HaSessionHolder.session,
+                favoriteEntityIds = favoriteEntityIds,
                 onBack = { navController.popBackStack() },
             )
         }

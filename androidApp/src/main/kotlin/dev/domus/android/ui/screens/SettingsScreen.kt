@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -42,14 +43,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import android.content.ComponentName
+import android.service.quicksettings.TileService
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import dev.domus.android.DomusQuickToggleTile
 import dev.domus.android.data.SettingsStore
 import dev.domus.shared.DesignTokens
+import dev.domus.shared.data.HaSession
+import dev.domus.shared.model.friendlyName
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+
+/** Domains meaningful as a single-tap Quick Settings tile toggle. */
+private val QUICK_TILE_ELIGIBLE_DOMAINS = setOf("light", "switch", "fan", "input_boolean", "siren")
 
 private val PRESET_SEED_COLORS = listOf(
     0                    to "Auto",
@@ -68,6 +79,8 @@ private val REFRESH_INTERVALS = listOf(5, 10, 30, 60)
 @Composable
 fun SettingsScreen(
     settingsStore: SettingsStore,
+    session: HaSession?,
+    favoriteEntityIds: Set<String>,
     onBack: () -> Unit,
 ) {
     val showDebugDiag by settingsStore.showDebugDiag.collectAsState(initial = true)
@@ -75,12 +88,22 @@ fun SettingsScreen(
     val groupByRoom by settingsStore.groupByRoom.collectAsState(initial = true)
     val keepScreenOn by settingsStore.keepScreenOn.collectAsState(initial = false)
     val keepConnectionAlive by settingsStore.keepConnectionAlive.collectAsState(initial = false)
+    val quickTileEntityId by settingsStore.quickTileEntityId.collectAsState(initial = null)
     val refreshIntervalSeconds by settingsStore.refreshIntervalSeconds.collectAsState(initial = 10)
     val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
     val seedColorArgb by settingsStore.seedColorArgb.collectAsState(initial = 0)
     val uiDensity by settingsStore.uiDensity.collectAsState(initial = "comfortable")
     val dashboardLayout by settingsStore.dashboardLayout.collectAsState(initial = "grid2")
+    val entities by (session?.repository?.entities ?: remember { MutableStateFlow(emptyMap()) })
+        .collectAsState(initial = emptyMap())
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    fun selectQuickTile(entityId: String) {
+        scope.launch {
+            settingsStore.setQuickTileEntityId(entityId)
+            TileService.requestListeningState(context, ComponentName(context, DomusQuickToggleTile::class.java))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -181,6 +204,41 @@ fun SettingsScreen(
                 currentSeconds = refreshIntervalSeconds,
                 onSelected = { scope.launch { settingsStore.setRefreshIntervalSeconds(it) } },
             )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.md.dp))
+
+            // ── Quick Settings Tile ──────────────────────────────────────────
+            SectionHeader("Quick Settings Tile")
+            SettingsLabel(
+                title = "Tile entity",
+                subtitle = "Add the Domus tile from your device's quick settings panel to toggle the entity below without opening the app.",
+            )
+            val tileEligible = favoriteEntityIds
+                .mapNotNull { entities[it] }
+                .filter { it.domain in QUICK_TILE_ELIGIBLE_DOMAINS }
+                .sortedBy { it.friendlyName }
+            if (tileEligible.isEmpty()) {
+                Text(
+                    text = "Favorite a light, switch, or fan to make it available here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                tileEligible.forEach { entity ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectQuickTile(entity.entityId) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = entity.entityId == quickTileEntityId,
+                            onClick = { selectQuickTile(entity.entityId) },
+                        )
+                        Text(entity.friendlyName, modifier = Modifier.padding(start = DesignTokens.Spacing.sm.dp))
+                    }
+                }
+            }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = DesignTokens.Spacing.md.dp))
 
