@@ -6,13 +6,19 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,6 +119,7 @@ import dev.domus.shared.model.weatherTemperature
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.LinearProgressIndicator
@@ -448,6 +455,22 @@ fun DashboardScreen(
     }
 }
 
+/** A clickable modifier that scales the content down slightly while pressed, on top of the
+ *  usual ripple — a small tactile touch that makes tapping a card feel less flat. */
+@Composable
+private fun Modifier.pressScaleClickable(onClick: () -> Unit): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "pressScale",
+    )
+    return this
+        .graphicsLayer { scaleX = scale; scaleY = scale }
+        .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick)
+}
+
 @Composable
 private fun IconBadgeCircle(
     icon: ImageVector,
@@ -617,7 +640,7 @@ private fun EntityCard(
     val containerColor by animateColorAsState(targetContainerColor, tween(350, easing = FastOutSlowInEasing), label = "cardColor")
 
     val cardModifier = if (onOpenDetail != null) {
-        Modifier.fillMaxWidth().clickable(onClick = onOpenDetail)
+        Modifier.fillMaxWidth().pressScaleClickable(onClick = onOpenDetail)
     } else {
         Modifier.fillMaxWidth()
     }
