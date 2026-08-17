@@ -38,6 +38,7 @@ import dev.domus.android.ui.LocalAnimatedVisibilityScope
 import dev.domus.android.ui.LocalRefreshIntervalSeconds
 import dev.domus.android.ui.LocalSharedTransitionScope
 import dev.domus.android.data.ConnectionStore
+import dev.domus.android.data.DomusShortcuts
 import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.android.data.OnboardingStore
@@ -59,8 +60,11 @@ import dev.domus.shared.api.HaOAuthException
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaConnectionConfig
 import dev.domus.shared.model.HaCredentials
+import dev.domus.shared.model.friendlyName
 import java.net.URLDecoder
 import java.net.URLEncoder
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -257,6 +261,18 @@ private fun DomusNavHost() {
                             }
                         }
                     }
+                }
+                LaunchedEffect(session, favoriteEntityIds) {
+                    session.repository.entities
+                        .map { entities -> favoriteEntityIds.mapNotNull { entities[it] } }
+                        .distinctUntilChangedBy { list -> list.map { it.entityId to it.friendlyName } }
+                        .collect { favorites ->
+                            try {
+                                DomusShortcuts.update(context.applicationContext, favorites)
+                            } catch (_: Exception) {
+                                // Best-effort: e.g. ShortcutManager rate limit. Never worth crashing over.
+                            }
+                        }
                 }
                 CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                     DashboardScreen(
