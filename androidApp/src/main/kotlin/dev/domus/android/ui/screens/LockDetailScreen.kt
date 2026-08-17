@@ -48,9 +48,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -69,6 +72,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
     val refreshInterval = LocalRefreshIntervalSeconds.current
+    val context = LocalContext.current
 
     LaunchedEffect(entityId, refreshInterval) {
         while (true) {
@@ -85,7 +89,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
                     HaServiceCall(domain = "lock", service = service, entityId = entityId),
                 )
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.lock_error_update, e.message))
             }
         }
     }
@@ -102,7 +106,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -146,11 +150,11 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
 
             Text(
                 text = when (state) {
-                    "locked" -> "Locked"
-                    "unlocked" -> "Unlocked"
-                    "locking" -> "Locking…"
-                    "unlocking" -> "Unlocking…"
-                    "jammed" -> "Jammed"
+                    "locked" -> stringResource(R.string.lock_state_locked)
+                    "unlocked" -> stringResource(R.string.lock_state_unlocked)
+                    "locking" -> stringResource(R.string.lock_state_locking)
+                    "unlocking" -> stringResource(R.string.lock_state_unlocking)
+                    "jammed" -> stringResource(R.string.lock_state_jammed)
                     else -> state.replaceFirstChar { it.uppercase() }
                 },
                 style = MaterialTheme.typography.headlineSmall,
@@ -159,7 +163,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
             val changedBy = entity.changedBy
             if (!changedBy.isNullOrBlank()) {
                 Text(
-                    text = "by $changedBy",
+                    text = stringResource(R.string.lock_changed_by, changedBy),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -174,7 +178,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
                 ) {
                     CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                     Text(
-                        text = if (state == "locking") "Securing…" else "Opening…",
+                        text = if (state == "locking") stringResource(R.string.lock_securing) else stringResource(R.string.lock_opening),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

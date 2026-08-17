@@ -49,8 +49,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.android.ui.components.TemperatureDial
 import dev.domus.shared.DesignTokens
@@ -90,6 +93,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
     val refreshInterval = LocalRefreshIntervalSeconds.current
+    val context = LocalContext.current
 
     LaunchedEffect(entityId, refreshInterval) {
         while (true) {
@@ -104,7 +108,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
             try {
                 session.repository.callService(call)
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.climate_error_update, e.message))
             }
         }
     }
@@ -121,7 +125,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -134,7 +138,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                             },
                             modifier = Modifier.padding(end = DesignTokens.Spacing.sm.dp),
                         ) {
-                            Icon(imageVector = Icons.Filled.PowerSettingsNew, contentDescription = "Power")
+                            Icon(imageVector = Icons.Filled.PowerSettingsNew, contentDescription = stringResource(R.string.climate_power))
                         }
                     }
                 },
@@ -192,7 +196,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                 if (entity.hvacModes.isNotEmpty()) {
                     SelectorPill(
                         icon = iconForHvacMode(entity.hvacMode),
-                        label = "Mode",
+                        label = stringResource(R.string.climate_mode),
                         value = entity.hvacMode,
                         options = entity.hvacModes,
                         onSelect = { mode ->
@@ -210,7 +214,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                 if (entity.fanModes.isNotEmpty()) {
                     SelectorPill(
                         icon = Icons.Filled.Air,
-                        label = "Fan speed",
+                        label = stringResource(R.string.climate_fan_speed),
                         value = entity.fanMode,
                         options = entity.fanModes,
                         onSelect = { mode ->
@@ -228,7 +232,7 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                 if (entity.swingModes.isNotEmpty()) {
                     SelectorPill(
                         icon = Icons.Filled.SwapVert,
-                        label = "Swing",
+                        label = stringResource(R.string.climate_swing),
                         value = entity.swingMode,
                         options = entity.swingModes,
                         onSelect = { mode ->
@@ -245,9 +249,11 @@ fun ClimateDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                 }
             }
 
+            val currentTemperatureLabel = stringResource(R.string.climate_current_temperature)
+            val humidityLabel = stringResource(R.string.climate_humidity)
             val infoRows = buildList {
-                entity.currentTemperature?.let { add("Current temperature" to "%.1f%s".format(it, entity.temperatureUnit)) }
-                (entity.currentHumidity ?: entity.targetHumidity)?.let { add("Humidity" to "$it%") }
+                entity.currentTemperature?.let { add(currentTemperatureLabel to "%.1f%s".format(it, entity.temperatureUnit)) }
+                (entity.currentHumidity ?: entity.targetHumidity)?.let { add(humidityLabel to "$it%") }
             }
             InfoCard(rows = infoRows)
 

@@ -35,6 +35,50 @@
     <string name="alarm_disarm">Disarm</string>
     <string name="dashboard_cover_position">Position: %1$d%%</string>
 
+    <!-- Lock detail -->
+    <string name="lock_error_update">Couldn\'t update: %1$s</string>
+    <string name="lock_state_locked">Locked</string>
+    <string name="lock_state_unlocked">Unlocked</string>
+    <string name="lock_state_locking">Locking…</string>
+    <string name="lock_state_unlocking">Unlocking…</string>
+    <string name="lock_state_jammed">Jammed</string>
+    <string name="lock_changed_by">by %1$s</string>
+    <string name="lock_securing">Securing…</string>
+    <string name="lock_opening">Opening…</string>
+
+    <!-- Climate detail -->
+    <string name="climate_error_update">Couldn\'t update: %1$s</string>
+    <string name="climate_power">Power</string>
+    <string name="climate_mode">Mode</string>
+    <string name="climate_fan_speed">Fan speed</string>
+    <string name="climate_swing">Swing</string>
+    <string name="climate_current_temperature">Current temperature</string>
+    <string name="climate_humidity">Humidity</string>
+
+    <!-- Switch detail -->
+    <string name="switch_error_update">Couldn\'t update: %1$s</string>
+    <string name="switch_turn_off">Turn off</string>
+    <string name="switch_turn_on">Turn on</string>
+    <string name="switch_energy_monitoring">Energy monitoring</string>
+    <string name="switch_power">Power</string>
+    <string name="switch_voltage">Voltage</string>
+    <string name="switch_current">Current</string>
+    <string name="switch_todays_energy">Today\'s energy</string>
+    <string name="switch_energy">Energy</string>
+    <string name="switch_apparent_power">Apparent power</string>
+
+    <!-- Light detail -->
+    <string name="light_error_update">Couldn\'t update: %1$s</string>
+    <string name="light_turn_off">Turn off</string>
+    <string name="light_turn_on">Turn on</string>
+    <string name="light_brightness">Brightness</string>
+    <string name="light_color_temperature">Color temperature</string>
+    <string name="light_warm_kelvin">Warm  %1$dK</string>
+    <string name="light_cool_kelvin">%1$dK  Cool</string>
+    <string name="light_color">Color</string>
+    <string name="light_saturation">Saturation</string>
+    <string name="light_presets">Presets</string>
+
     <!-- Onboarding -->
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>

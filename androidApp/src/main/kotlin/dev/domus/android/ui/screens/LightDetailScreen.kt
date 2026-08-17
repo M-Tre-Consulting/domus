@@ -51,8 +51,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -102,6 +105,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
     val refreshInterval = LocalRefreshIntervalSeconds.current
+    val context = LocalContext.current
 
     LaunchedEffect(entityId, refreshInterval) {
         while (true) {
@@ -116,7 +120,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
             try {
                 session.repository.callService(call)
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.light_error_update, e.message))
             }
         }
     }
@@ -133,7 +137,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -204,7 +208,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.Lightbulb,
-                        contentDescription = if (isOn) "Turn off" else "Turn on",
+                        contentDescription = stringResource(if (isOn) R.string.light_turn_off else R.string.light_turn_on),
                         tint = heroIconTint,
                         modifier = Modifier.size(48.dp),
                     )
@@ -260,7 +264,7 @@ private fun LightBrightnessSection(entity: HaEntityState, onCallService: (HaServ
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Brightness", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.light_brightness), style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "${sliderPct.toInt()}%",
                 style = MaterialTheme.typography.bodyMedium,
@@ -299,7 +303,7 @@ private fun LightColorTempSection(entity: HaEntityState, onCallService: (HaServi
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Color temperature", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.light_color_temperature), style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "${sliderCt.toInt()} K",
                 style = MaterialTheme.typography.bodyMedium,
@@ -334,8 +338,16 @@ private fun LightColorTempSection(entity: HaEntityState, onCallService: (HaServi
             modifier = Modifier.fillMaxWidth(),
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Warm  ${minCt}K", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${maxCt}K  Cool", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.light_warm_kelvin, minCt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                stringResource(R.string.light_cool_kelvin, maxCt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -370,7 +382,7 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Color", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.light_color), style = MaterialTheme.typography.labelLarge)
             Box(
                 modifier = Modifier
                     .size(20.dp)
@@ -399,7 +411,7 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Saturation", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.light_saturation), style = MaterialTheme.typography.labelLarge)
             Text(
                 text = "${satSlider.toInt()}%",
                 style = MaterialTheme.typography.bodyMedium,
@@ -426,7 +438,7 @@ private fun LightColorSection(entity: HaEntityState, onCallService: (HaServiceCa
         )
 
         Text(
-            text = "Presets",
+            text = stringResource(R.string.light_presets),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = DesignTokens.Spacing.xs.dp),

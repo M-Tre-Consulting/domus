@@ -36,8 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.domus.android.R
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -65,6 +68,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = LocalHapticFeedback.current
     val refreshInterval = LocalRefreshIntervalSeconds.current
+    val context = LocalContext.current
 
     LaunchedEffect(entityId, refreshInterval) {
         val switchName = entityId.substringAfter('.')
@@ -83,7 +87,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
             try {
                 session.repository.callService(call)
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Couldn't update: ${e.message}")
+                snackbarHostState.showSnackbar(context.getString(R.string.switch_error_update, e.message))
             }
         }
     }
@@ -100,7 +104,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -132,14 +136,20 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
         // sibling sensor entities whose entity ID shares the same name prefix and whose
         // device_class is a power-monitoring class — this covers integrations like Shelly or
         // Tasmota that expose separate sensor entities per measurement.
+        val powerLabel = stringResource(R.string.switch_power)
+        val voltageLabel = stringResource(R.string.switch_voltage)
+        val currentLabel = stringResource(R.string.switch_current)
+        val energyLabel = stringResource(R.string.switch_energy)
+        val apparentPowerLabel = stringResource(R.string.switch_apparent_power)
+        val todaysEnergyLabel = stringResource(R.string.switch_todays_energy)
         val powerRows = buildList {
-            entity.currentPowerW?.let { add("Power" to "%.1f W".format(it)) }
-            entity.voltageV?.let { add("Voltage" to "%.1f V".format(it)) }
+            entity.currentPowerW?.let { add(powerLabel to "%.1f W".format(it)) }
+            entity.voltageV?.let { add(voltageLabel to "%.1f V".format(it)) }
             entity.currentMa?.let {
-                if (it > 1000) add("Current" to "%.2f A".format(it / 1000.0))
-                else add("Current" to "%.0f mA".format(it))
+                if (it > 1000) add(currentLabel to "%.2f A".format(it / 1000.0))
+                else add(currentLabel to "%.0f mA".format(it))
             }
-            entity.todayEnergyKwh?.let { add("Today's energy" to "%.3f kWh".format(it)) }
+            entity.todayEnergyKwh?.let { add(todaysEnergyLabel to "%.3f kWh".format(it)) }
 
             if (isEmpty()) {
                 val switchName = entityId.substringAfter('.')
@@ -160,11 +170,11 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                     }
                     .forEach { sensor ->
                         val label = when (sensor.deviceClass) {
-                            "power" -> "Power"
-                            "voltage" -> "Voltage"
-                            "current" -> "Current"
-                            "energy" -> "Energy"
-                            "apparent_power" -> "Apparent power"
+                            "power" -> powerLabel
+                            "voltage" -> voltageLabel
+                            "current" -> currentLabel
+                            "energy" -> energyLabel
+                            "apparent_power" -> apparentPowerLabel
                             else -> sensor.friendlyName
                         }
                         val value = buildString {
@@ -200,7 +210,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = if (isOn) "Turn off" else "Turn on",
+                        contentDescription = stringResource(if (isOn) R.string.switch_turn_off else R.string.switch_turn_on),
                         tint = if (isOn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(48.dp),
                     )
@@ -216,7 +226,7 @@ fun SwitchDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit)
             if (powerRows.isNotEmpty()) {
                 Spacer(Modifier.height(DesignTokens.Spacing.xl.dp))
                 Text(
-                    text = "Energy monitoring",
+                    text = stringResource(R.string.switch_energy_monitoring),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.align(Alignment.Start),
