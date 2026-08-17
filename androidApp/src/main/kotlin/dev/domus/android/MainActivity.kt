@@ -12,9 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +52,7 @@ import dev.domus.android.ui.screens.MediaPlayerDetailScreen
 import dev.domus.android.ui.screens.OAuthLoginScreen
 import dev.domus.android.ui.screens.OnboardingScreen
 import dev.domus.android.ui.screens.SettingsScreen
+import dev.domus.android.ui.screens.SplashScreen
 import dev.domus.android.ui.screens.SwitchDetailScreen
 import dev.domus.android.ui.theme.DomusTheme
 import dev.domus.android.widget.DomusWidget
@@ -204,9 +202,7 @@ private fun DomusNavHost() {
                     }
                 }
             }
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            SplashScreen()
         }
         composable(Routes.ONBOARDING) {
             OnboardingScreen(

@@ -17,9 +17,13 @@ object DesignTokens {
         const val xl = 32
     }
 
+    /** Material 3 Expressive-style shape scale: bigger jumps between steps than the classic
+     *  scale, used intentionally rather than one radius everywhere, for visual rhythm. */
     object Shape {
+        const val cornerExtraSmall = 8
         const val cornerSmall = 12
         const val cornerMedium = 20
         const val cornerLarge = 28
+        const val cornerExtraLarge = 36
     }
 }
