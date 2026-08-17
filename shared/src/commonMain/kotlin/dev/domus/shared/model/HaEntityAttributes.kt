@@ -82,6 +82,13 @@ val HaEntityState.currentHumidity: Double?
 val HaEntityState.targetHumidity: Double?
     get() = (attribute("humidity") as? JsonPrimitive)?.doubleOrNull
 
+/** Current outdoor temperature/humidity, reported by `weather.*` entities. */
+val HaEntityState.weatherTemperature: Double?
+    get() = (attribute("temperature") as? JsonPrimitive)?.doubleOrNull
+
+val HaEntityState.weatherHumidity: Double?
+    get() = (attribute("humidity") as? JsonPrimitive)?.doubleOrNull
+
 val HaEntityState.minTemp: Double
     get() = (attribute("min_temp") as? JsonPrimitive)?.doubleOrNull ?: 7.0
 

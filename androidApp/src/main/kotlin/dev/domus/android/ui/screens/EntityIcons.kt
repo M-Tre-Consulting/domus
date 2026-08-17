@@ -20,12 +20,16 @@ import androidx.compose.material.icons.filled.Plumbing
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SmartButton
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonPin
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /** Best-effort icon per HA entity domain; falls back to a generic device icon. */
@@ -49,6 +53,10 @@ fun iconForDomain(domain: String): ImageVector = when (domain) {
     "script" -> Icons.Filled.Code
     "number", "input_number" -> Icons.Filled.Numbers
     "select", "input_select" -> Icons.Filled.ArrowDropDownCircle
+    "alarm_control_panel" -> Icons.Filled.Security
+    "weather" -> Icons.Filled.Cloud
+    "person" -> Icons.Filled.PersonPin
+    "device_tracker" -> Icons.Filled.Person
     else -> Icons.Filled.DeviceUnknown
 }
 
@@ -78,6 +86,10 @@ private val DOMAIN_LABELS = mapOf(
     "input_number" to "Numbers",
     "select" to "Selectors",
     "input_select" to "Selectors",
+    "alarm_control_panel" to "Alarm",
+    "weather" to "Weather",
+    "person" to "People",
+    "device_tracker" to "Presence",
 )
 
 /** Human-readable section title for a domain, e.g. "binary_sensor" -> "Sensors". */

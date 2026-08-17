@@ -102,6 +102,7 @@ import dev.domus.shared.model.minTemp
 import dev.domus.shared.model.targetTemperature
 import dev.domus.shared.model.targetTempStep
 import dev.domus.shared.model.temperatureUnit
+import dev.domus.shared.model.weatherTemperature
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import androidx.compose.ui.graphics.Color
@@ -124,7 +125,10 @@ private val TOGGLEABLE_DOMAINS = setOf("light", "switch", "fan", "automation", "
  * Domains rendered as compact half-width tiles. Light and switch get full-width EntityCards
  * so they can show inline controls (brightness slider, power reading) and navigate to detail.
  */
-private val TILE_DOMAINS = setOf("fan", "automation", "input_boolean", "siren", "binary_sensor", "sensor")
+private val TILE_DOMAINS = setOf(
+    "fan", "automation", "input_boolean", "siren", "binary_sensor", "sensor",
+    "weather", "person", "device_tracker",
+)
 
 private val ACTIVE_STATES = setOf(
     "on", "playing", "heat", "cool", "heat_cool", "dry", "fan_only", "auto", "cleaning", "home", "triggered",
@@ -136,6 +140,7 @@ private fun isActiveState(domain: String, state: String): Boolean {
     return when (domain) {
         "lock" -> s == "unlocked"
         "cover", "valve" -> s == "open"
+        "alarm_control_panel" -> s.startsWith("armed") || s == "triggered" || s == "arming" || s == "pending"
         else -> s in ACTIVE_STATES
     }
 }
@@ -518,6 +523,15 @@ private fun EntityTile(entity: HaEntityState, onCallService: (HaServiceCall) -> 
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            if (entity.domain == "weather") {
+                entity.weatherTemperature?.let { temp ->
+                    Text(
+                        text = "%.1f°".format(temp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
     }
 }
@@ -540,6 +554,8 @@ private fun EntityCard(
             MaterialTheme.colorScheme.errorContainer
         entity.domain == "lock" && entity.state.equals("locked", ignoreCase = true) ->
             MaterialTheme.colorScheme.primaryContainer
+        entity.domain == "alarm_control_panel" && entity.state.equals("triggered", ignoreCase = true) ->
+            MaterialTheme.colorScheme.errorContainer
         isActive -> {
             val lightColor = lightBadgeColor(entity)
             if (lightColor != null) lightColor.copy(alpha = 0.18f).compositeOver(MaterialTheme.colorScheme.surface)
@@ -637,6 +653,9 @@ private fun EntityCard(
                 }
                 if (entity.domain == "lock") {
                     LockControls(entity = entity, onCallService = onCallService)
+                }
+                if (entity.domain == "alarm_control_panel") {
+                    AlarmControls(entity = entity, onCallService = onCallService)
                 }
                 if (entity.domain == "vacuum") {
                     VacuumControls(entity = entity, onCallService = onCallService)
@@ -823,6 +842,30 @@ private fun LockControls(entity: HaEntityState, onCallService: (HaServiceCall) -
                 onCallService(HaServiceCall(domain = "lock", service = service, entityId = entity.entityId))
             },
         )
+    }
+}
+
+@Composable
+private fun AlarmControls(entity: HaEntityState, onCallService: (HaServiceCall) -> Unit) {
+    val isDisarmed = entity.state.equals("disarmed", ignoreCase = true)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = DesignTokens.Spacing.sm.dp),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        if (isDisarmed) {
+            TextButton(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_arm_home", entity.entityId)) }) {
+                Text("Arm home")
+            }
+            TextButton(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_arm_away", entity.entityId)) }) {
+                Text("Arm away")
+            }
+        } else {
+            Button(onClick = { onCallService(HaServiceCall("alarm_control_panel", "alarm_disarm", entity.entityId)) }) {
+                Text("Disarm")
+            }
+        }
     }
 }
 
