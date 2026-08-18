@@ -362,7 +362,7 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.CLIMATE_DETAIL) { inclusive = true } }
                 }
             } else {
-                ClimateDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                ClimateDetailScreen(session = session, entityId = entityId, settingsStore = settingsStore, onBack = { navController.popBackStack() })
             }
         }
         composable(
@@ -377,7 +377,7 @@ private fun DomusNavHost() {
                 }
             } else {
                 CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                    LightDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                    LightDetailScreen(session = session, entityId = entityId, settingsStore = settingsStore, onBack = { navController.popBackStack() })
                 }
             }
         }
@@ -393,7 +393,7 @@ private fun DomusNavHost() {
                 }
             } else {
                 CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                    SwitchDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                    SwitchDetailScreen(session = session, entityId = entityId, settingsStore = settingsStore, onBack = { navController.popBackStack() })
                 }
             }
         }
@@ -408,7 +408,7 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.MEDIA_PLAYER_DETAIL) { inclusive = true } }
                 }
             } else {
-                MediaPlayerDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                MediaPlayerDetailScreen(session = session, entityId = entityId, settingsStore = settingsStore, onBack = { navController.popBackStack() })
             }
         }
         composable(
@@ -422,7 +422,7 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.LOCK_DETAIL) { inclusive = true } }
                 }
             } else {
-                LockDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+                LockDetailScreen(session = session, entityId = entityId, settingsStore = settingsStore, onBack = { navController.popBackStack() })
             }
         }
         composable(
@@ -460,7 +460,7 @@ private fun DomusNavHost() {
                     navController.navigate(Routes.CONNECT) { popUpTo(Routes.ASSIST) { inclusive = true } }
                 }
             } else {
-                AssistScreen(session = session, onBack = { navController.popBackStack() })
+                AssistScreen(session = session, settingsStore = settingsStore, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {
@@ -474,6 +474,7 @@ private fun DomusNavHost() {
             } else {
                 EntityPickerScreen(
                     session = session,
+                    settingsStore = settingsStore,
                     initialSelection = favoriteEntityIds,
                     onSave = { selection ->
                         scope.launch {

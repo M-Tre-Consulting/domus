@@ -1,5 +1,6 @@
 package dev.domus.android.ui
 
+import android.view.HapticFeedbackConstants
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -60,6 +62,8 @@ fun AppLockGate(
     val appLockEnabled by settingsStore.appLockEnabled.collectAsState(initial = false)
     var unlocked by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -91,7 +95,12 @@ fun AppLockGate(
             ContextCompat.getMainExecutor(activity),
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                     unlocked = true
+                }
+
+                override fun onAuthenticationFailed() {
+                    if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.REJECT)
                 }
             },
         )

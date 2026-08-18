@@ -358,7 +358,10 @@ fun DashboardScreen(
         floatingActionButton = {
             if (!isSearchActive) {
                 ExtendedFloatingActionButton(
-                    onClick = onOpenAssist,
+                    onClick = {
+                        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        onOpenAssist()
+                    },
                     icon = { Icon(Icons.Filled.Mic, contentDescription = null) },
                     text = { Text(stringResource(R.string.assist_title)) },
                 )
@@ -468,6 +471,7 @@ fun DashboardScreen(
                                             EntityTile(
                                                 entity = entity,
                                                 onCallService = ::callService,
+                                                useHapticFeedback = useHapticFeedback,
                                                 onOpenDetail = when (entity.domain) {
                                                     "weather" -> { { onOpenDetail(entity.entityId) } }
                                                     else -> null
@@ -478,6 +482,7 @@ fun DashboardScreen(
                                                 entity = entity,
                                                 onCallService = ::callService,
                                                 compact = dashboardLayout != "list",
+                                                useHapticFeedback = useHapticFeedback,
                                                 onOpenDetail = when (entity.domain) {
                                                     "climate", "water_heater", "light", "switch", "media_player", "lock", "camera" -> {
                                                         { onOpenDetail(entity.entityId) }
@@ -548,9 +553,10 @@ private fun StaggeredItem(index: Int, content: @Composable () -> Unit) {
 }
 
 /** A clickable modifier that scales the content down slightly while pressed, on top of the
- *  usual ripple — a small tactile touch that makes tapping a card feel less flat. */
+ *  usual ripple — a small tactile touch that makes tapping a card feel less flat - plus the
+ *  same haptic tick every other actionable tap in the app uses, gated by [useHaptic]. */
 @Composable
-private fun Modifier.pressScaleClickable(onClick: () -> Unit): Modifier {
+private fun Modifier.pressScaleClickable(useHaptic: Boolean, onClick: () -> Unit): Modifier {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -558,9 +564,17 @@ private fun Modifier.pressScaleClickable(onClick: () -> Unit): Modifier {
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
         label = "pressScale",
     )
+    val view = LocalView.current
     return this
         .graphicsLayer { scaleX = scale; scaleY = scale }
-        .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = LocalIndication.current,
+            onClick = {
+                if (useHaptic) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                onClick()
+            },
+        )
 }
 
 @Composable
@@ -639,6 +653,7 @@ internal fun EntityIconBadge(
 private fun EntityTile(
     entity: HaEntityState,
     onCallService: (HaServiceCall) -> Unit,
+    useHapticFeedback: Boolean = true,
     onOpenDetail: (() -> Unit)? = null,
 ) {
     val isActive = isActiveState(entity.domain, entity.state)
@@ -650,7 +665,7 @@ private fun EntityTile(
     val containerColor by animateColorAsState(targetColor, tween(300), label = "tileColor")
 
     val tileModifier = if (onOpenDetail != null) {
-        Modifier.fillMaxWidth().pressScaleClickable(onClick = onOpenDetail)
+        Modifier.fillMaxWidth().pressScaleClickable(useHaptic = useHapticFeedback, onClick = onOpenDetail)
     } else {
         Modifier.fillMaxWidth()
     }
@@ -718,6 +733,7 @@ private fun EntityCard(
     entity: HaEntityState,
     onCallService: (HaServiceCall) -> Unit,
     compact: Boolean = false,
+    useHapticFeedback: Boolean = true,
     onOpenDetail: (() -> Unit)? = null,
 ) {
     val isActive = isActiveState(entity.domain, entity.state)
@@ -742,7 +758,7 @@ private fun EntityCard(
     val containerColor by animateColorAsState(targetContainerColor, tween(350, easing = FastOutSlowInEasing), label = "cardColor")
 
     val cardModifier = if (onOpenDetail != null) {
-        Modifier.fillMaxWidth().pressScaleClickable(onClick = onOpenDetail)
+        Modifier.fillMaxWidth().pressScaleClickable(useHaptic = useHapticFeedback, onClick = onOpenDetail)
     } else {
         Modifier.fillMaxWidth()
     }

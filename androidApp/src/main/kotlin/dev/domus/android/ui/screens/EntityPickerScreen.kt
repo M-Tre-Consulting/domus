@@ -1,5 +1,6 @@
 package dev.domus.android.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +28,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.android.R
+import dev.domus.android.data.SettingsStore
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import dev.domus.shared.model.HaEntityState
@@ -51,12 +54,15 @@ private fun previewText(entity: HaEntityState): String {
 @Composable
 fun EntityPickerScreen(
     session: HaSession,
+    settingsStore: SettingsStore,
     initialSelection: Set<String>,
     onSave: (Set<String>) -> Unit,
 ) {
     val entities by session.repository.entities.collectAsState()
     var selection by remember(initialSelection) { mutableStateOf(initialSelection) }
     var query by remember { mutableStateOf("") }
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
 
     LaunchedEffect(session) {
         if (entities.isEmpty()) {
@@ -65,6 +71,7 @@ fun EntityPickerScreen(
     }
 
     fun toggle(entityId: String) {
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         selection = if (entityId in selection) selection - entityId else selection + entityId
     }
 

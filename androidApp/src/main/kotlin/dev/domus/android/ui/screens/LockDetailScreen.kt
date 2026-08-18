@@ -47,13 +47,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.android.R
+import dev.domus.android.data.SettingsStore
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -65,12 +66,13 @@ import dev.domus.android.ui.LocalRefreshIntervalSeconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
+fun LockDetailScreen(session: HaSession, entityId: String, settingsStore: SettingsStore, onBack: () -> Unit) {
     val entities by session.repository.entities.collectAsState()
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
     val refreshInterval = LocalRefreshIntervalSeconds.current
     val context = LocalContext.current
 
@@ -82,7 +84,7 @@ fun LockDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
     }
 
     fun callService(service: String) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         scope.launch {
             try {
                 session.repository.callService(

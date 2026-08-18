@@ -45,8 +45,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -56,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.android.R
+import dev.domus.android.data.SettingsStore
 import dev.domus.android.ui.components.StateHistorySection
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
@@ -98,12 +99,13 @@ private val LIGHT_COLOR_PRESETS = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) {
+fun LightDetailScreen(session: HaSession, entityId: String, settingsStore: SettingsStore, onBack: () -> Unit) {
     val entities by session.repository.entities.collectAsState()
     val entity = entities[entityId]
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
     val refreshInterval = LocalRefreshIntervalSeconds.current
     val context = LocalContext.current
 
@@ -115,7 +117,7 @@ fun LightDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit) 
     }
 
     fun callService(call: HaServiceCall) {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         scope.launch {
             try {
                 session.repository.callService(call)

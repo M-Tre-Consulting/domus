@@ -3,6 +3,7 @@ package dev.domus.android.ui.screens
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.speech.RecognizerIntent
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -59,6 +60,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -69,10 +71,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.domus.android.R
+import dev.domus.android.data.SettingsStore
 import dev.domus.shared.DesignTokens
 import dev.domus.shared.data.HaSession
 import kotlinx.coroutines.launch
@@ -91,7 +95,7 @@ private data class ChatMessage(
  *  in-process, so no RECORD_AUDIO permission is needed on our side. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AssistScreen(session: HaSession, onBack: () -> Unit) {
+fun AssistScreen(session: HaSession, settingsStore: SettingsStore, onBack: () -> Unit) {
     var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
     var input by remember { mutableStateOf("") }
     var isThinking by remember { mutableStateOf(false) }
@@ -101,12 +105,15 @@ fun AssistScreen(session: HaSession, onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
     val micUnavailableMessage = stringResource(R.string.assist_mic_unavailable)
     val errorMessage = stringResource(R.string.assist_error_generic)
 
     fun send(text: String) {
         val trimmed = text.trim()
         if (trimmed.isBlank() || isThinking) return
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         messages = messages + ChatMessage(id = nextId++, text = trimmed, isUser = true)
         input = ""
         isThinking = true
@@ -131,6 +138,7 @@ fun AssistScreen(session: HaSession, onBack: () -> Unit) {
     }
 
     fun launchMic() {
+        if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         }
