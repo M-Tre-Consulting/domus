@@ -26,8 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -81,22 +79,11 @@ class MainActivity : FragmentActivity() {
         setContent {
             val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
             val seedColorArgb by settingsStore.seedColorArgb.collectAsState(initial = 0)
-            val uiDensity by settingsStore.uiDensity.collectAsState(initial = "comfortable")
 
             DomusTheme(themeMode = themeMode, seedColorArgb = seedColorArgb) {
-                val densityMultiplier = when (uiDensity) {
-                    "compact" -> 0.85f
-                    "spacious" -> 1.15f
-                    else -> 1.0f
-                }
-                val base = LocalDensity.current
-                CompositionLocalProvider(
-                    LocalDensity provides Density(base.density * densityMultiplier, base.fontScale),
-                ) {
-                    AppLockGate(settingsStore = settingsStore, activity = this@MainActivity) {
-                        Surface(modifier = Modifier.fillMaxSize()) {
-                            DomusNavHost()
-                        }
+                AppLockGate(settingsStore = settingsStore, activity = this@MainActivity) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        DomusNavHost()
                     }
                 }
             }

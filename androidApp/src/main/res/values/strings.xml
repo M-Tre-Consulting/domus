@@ -140,11 +140,6 @@
     <string name="settings_color_red">Red</string>
     <string name="settings_color_pink">Pink</string>
     <string name="settings_color_selected">Selected</string>
-    <string name="settings_density_title">Density</string>
-    <string name="settings_density_subtitle">Scale the UI up or down to fit more (or less) on screen.</string>
-    <string name="settings_density_compact">Compact</string>
-    <string name="settings_density_comfortable">Standard</string>
-    <string name="settings_density_spacious">Spacious</string>
 
     <string name="settings_layout_title">Layout</string>
     <string name="settings_layout_subtitle">How many columns to show on the dashboard.</string>

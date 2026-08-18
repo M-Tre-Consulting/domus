@@ -238,7 +238,6 @@ private fun PillNavItem(
 private fun AppearanceSection(settingsStore: SettingsStore) {
     val themeMode by settingsStore.themeMode.collectAsState(initial = "system")
     val seedColorArgb by settingsStore.seedColorArgb.collectAsState(initial = 0)
-    val uiDensity by settingsStore.uiDensity.collectAsState(initial = "comfortable")
     val scope = rememberCoroutineScope()
 
     SettingsLabel(title = stringResource(R.string.settings_theme_title), subtitle = stringResource(R.string.settings_theme_subtitle))
@@ -273,21 +272,6 @@ private fun AppearanceSection(settingsStore: SettingsStore) {
         presets = presetSeedColors,
         selectedLabel = selectedLabel,
         onSelect = { scope.launch { settingsStore.setSeedColorArgb(it) } },
-    )
-
-    SettingsLabel(
-        title = stringResource(R.string.settings_density_title),
-        subtitle = stringResource(R.string.settings_density_subtitle),
-        modifier = Modifier.padding(top = DesignTokens.Spacing.sm.dp),
-    )
-    ThreewaySegment(
-        options = listOf(
-            "compact" to stringResource(R.string.settings_density_compact),
-            "comfortable" to stringResource(R.string.settings_density_comfortable),
-            "spacious" to stringResource(R.string.settings_density_spacious),
-        ),
-        selected = uiDensity,
-        onSelect = { scope.launch { settingsStore.setUiDensity(it) } },
     )
 }
 

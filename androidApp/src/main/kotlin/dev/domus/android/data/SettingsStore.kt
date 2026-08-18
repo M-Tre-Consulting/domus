@@ -26,7 +26,6 @@ class SettingsStore(private val context: Context) {
         // Appearance
         private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")        // "system"|"light"|"dark"
         private val SEED_COLOR_KEY = intPreferencesKey("seed_color_argb")      // 0 = use wallpaper dynamic color
-        private val UI_DENSITY_KEY = stringPreferencesKey("ui_density")        // "compact"|"comfortable"|"spacious"
         // Dashboard
         private val DASHBOARD_LAYOUT_KEY = stringPreferencesKey("dashboard_layout") // "grid2"|"list"|"grid4"
         // Geofence
@@ -50,7 +49,6 @@ class SettingsStore(private val context: Context) {
     val refreshIntervalSeconds: Flow<Int> = context.settingsDataStore.data.map { it[REFRESH_INTERVAL_KEY] ?: 10 }
     val themeMode: Flow<String> = context.settingsDataStore.data.map { it[THEME_MODE_KEY] ?: "system" }
     val seedColorArgb: Flow<Int> = context.settingsDataStore.data.map { it[SEED_COLOR_KEY] ?: 0 }
-    val uiDensity: Flow<String> = context.settingsDataStore.data.map { it[UI_DENSITY_KEY] ?: "comfortable" }
     val dashboardLayout: Flow<String> = context.settingsDataStore.data.map { it[DASHBOARD_LAYOUT_KEY] ?: "grid2" }
     val geofenceEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[GEOFENCE_ENABLED_KEY] ?: false }
     val geofenceLatitude: Flow<Double?> = context.settingsDataStore.data.map { it[GEOFENCE_LATITUDE_KEY] }
@@ -98,10 +96,6 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setSeedColorArgb(argb: Int) {
         context.settingsDataStore.edit { it[SEED_COLOR_KEY] = argb }
-    }
-
-    suspend fun setUiDensity(density: String) {
-        context.settingsDataStore.edit { it[UI_DENSITY_KEY] = density }
     }
 
     suspend fun setDashboardLayout(layout: String) {

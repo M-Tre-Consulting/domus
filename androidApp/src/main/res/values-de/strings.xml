@@ -140,11 +140,6 @@
     <string name="settings_color_red">Rot</string>
     <string name="settings_color_pink">Pink</string>
     <string name="settings_color_selected">Ausgewählt</string>
-    <string name="settings_density_title">Dichte</string>
-    <string name="settings_density_subtitle">Skaliert die Oberfläche, um mehr oder weniger Inhalte anzuzeigen.</string>
-    <string name="settings_density_compact">Kompakt</string>
-    <string name="settings_density_comfortable">Standard</string>
-    <string name="settings_density_spacious">Geräumig</string>
 
     <string name="settings_layout_title">Layout</string>
     <string name="settings_layout_subtitle">Wie viele Spalten im Dashboard angezeigt werden.</string>

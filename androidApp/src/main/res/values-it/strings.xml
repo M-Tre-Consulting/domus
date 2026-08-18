@@ -140,11 +140,6 @@
     <string name="settings_color_red">Rosso</string>
     <string name="settings_color_pink">Rosa</string>
     <string name="settings_color_selected">Selezionato</string>
-    <string name="settings_density_title">Densità</string>
-    <string name="settings_density_subtitle">Ingrandisci o rimpicciolisci l\'interfaccia per mostrare più o meno contenuto.</string>
-    <string name="settings_density_compact">Compatta</string>
-    <string name="settings_density_comfortable">Standard</string>
-    <string name="settings_density_spacious">Spaziosa</string>
 
     <string name="settings_layout_title">Layout</string>
     <string name="settings_layout_subtitle">Quante colonne mostrare nella dashboard.</string>
