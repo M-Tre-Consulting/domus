@@ -2,6 +2,7 @@ package dev.domus.android.ui.screens
 
 import android.content.ComponentName
 import android.service.quicksettings.TileService
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -70,6 +71,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.domus.android.DomusQuickToggleTile
@@ -104,6 +106,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
 ) {
     var selectedSection by remember { mutableIntStateOf(0) }
+    val view = LocalView.current
+    val useHapticFeedback by settingsStore.useHapticFeedback.collectAsState(initial = true)
 
     Scaffold(
         topBar = {
@@ -144,7 +148,10 @@ fun SettingsScreen(
 
             SettingsPillNav(
                 selected = selectedSection,
-                onSelect = { selectedSection = it },
+                onSelect = { index ->
+                    if (useHapticFeedback) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    selectedSection = index
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = DesignTokens.Spacing.lg.dp),
