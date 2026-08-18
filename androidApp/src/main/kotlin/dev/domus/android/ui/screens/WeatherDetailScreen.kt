@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +79,9 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.sin
+import kotlin.random.Random
 
 /** Vertical sky gradient (top, bottom) for an HA weather `condition` - the visual mood of the
  *  hero header instead of a flat card background. */
@@ -92,6 +97,114 @@ private fun skyGradientFor(condition: String): Pair<Color, Color> = when (condit
     "snowy" -> Color(0xFF7FA3C9) to Color(0xFFEAF3FA)
     "snowy-rainy", "hail" -> Color(0xFF6C87A6) to Color(0xFFD6E3EC)
     else -> Color(0xFF4E86C6) to Color(0xFFB9D3E8)
+}
+
+private enum class ParticleKind { RAIN, SNOW, STARS, SUN, NONE }
+
+private fun particleKindFor(condition: String): ParticleKind = when (condition.lowercase()) {
+    "rainy", "pouring", "lightning", "lightning-rainy" -> ParticleKind.RAIN
+    "snowy", "snowy-rainy", "hail" -> ParticleKind.SNOW
+    "clear-night" -> ParticleKind.STARS
+    "sunny" -> ParticleKind.SUN
+    else -> ParticleKind.NONE
+}
+
+/** Ambient motion behind the hero - falling rain/snow, twinkling stars or a soft pulsing sun
+ *  glow, matching the condition - so the header feels like weather instead of a static card. */
+@Composable
+private fun WeatherParticles(condition: String, modifier: Modifier = Modifier) {
+    val kind = particleKindFor(condition)
+    if (kind == ParticleKind.NONE) return
+
+    val durationMillis = when (kind) {
+        ParticleKind.RAIN -> 1200
+        ParticleKind.SNOW -> 6000
+        ParticleKind.STARS -> 4000
+        else -> 5000
+    }
+    val transition = rememberInfiniteTransition(label = "weatherParticles")
+    val t by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis, easing = LinearEasing)),
+        label = "particleTime",
+    )
+
+    Canvas(modifier = modifier) {
+        when (kind) {
+            ParticleKind.RAIN -> drawRain(t, size)
+            ParticleKind.SNOW -> drawSnow(t, size)
+            ParticleKind.STARS -> drawStars(t, size)
+            ParticleKind.SUN -> drawSunGlow(t, size)
+            ParticleKind.NONE -> {}
+        }
+    }
+}
+
+private fun DrawScope.drawRain(t: Float, canvasSize: androidx.compose.ui.geometry.Size) {
+    val random = Random(42)
+    repeat(40) {
+        val seedX = random.nextFloat()
+        val phase = random.nextFloat()
+        val speed = 0.85f + random.nextFloat() * 0.3f
+        val progress = (t * speed + phase) % 1f
+        val length = 16.dp.toPx()
+        val x = seedX * canvasSize.width
+        val y = progress * (canvasSize.height + length) - length
+        drawLine(
+            color = Color.White.copy(alpha = 0.5f),
+            start = Offset(x, y),
+            end = Offset(x - 4.dp.toPx(), y + length),
+            strokeWidth = 1.5.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+private fun DrawScope.drawSnow(t: Float, canvasSize: androidx.compose.ui.geometry.Size) {
+    val random = Random(7)
+    repeat(30) {
+        val seedX = random.nextFloat()
+        val phase = random.nextFloat()
+        val speed = 0.5f + random.nextFloat() * 0.4f
+        val swayFreq = 1f + random.nextFloat() * 2f
+        val swayAmp = 6.dp.toPx() + random.nextFloat() * 10.dp.toPx()
+        val radius = 1.5.dp.toPx() + random.nextFloat() * 2.dp.toPx()
+        val progress = (t * speed + phase) % 1f
+        val baseX = seedX * canvasSize.width
+        val x = baseX + sin((progress * 2 * PI * swayFreq).toFloat()) * swayAmp
+        val y = progress * (canvasSize.height + radius * 2) - radius
+        drawCircle(color = Color.White.copy(alpha = 0.85f), radius = radius, center = Offset(x, y))
+    }
+}
+
+private fun DrawScope.drawStars(t: Float, canvasSize: androidx.compose.ui.geometry.Size) {
+    val random = Random(99)
+    repeat(25) {
+        val x = random.nextFloat() * canvasSize.width
+        val y = random.nextFloat() * canvasSize.height * 0.8f
+        val phase = random.nextFloat()
+        val freq = 0.7f + random.nextFloat() * 1.3f
+        val alpha = (sin((t * 2 * PI * freq + phase * 2 * PI).toFloat()) * 0.35f + 0.65f).coerceIn(0.3f, 1f)
+        val radius = 1.dp.toPx() + random.nextFloat() * 1.2.dp.toPx()
+        drawCircle(color = Color.White.copy(alpha = alpha), radius = radius, center = Offset(x, y))
+    }
+}
+
+private fun DrawScope.drawSunGlow(t: Float, canvasSize: androidx.compose.ui.geometry.Size) {
+    val pulse = sin((t * 2 * PI).toFloat()) * 0.06f + 1f
+    val center = Offset(canvasSize.width / 2f, canvasSize.height * 0.34f)
+    val baseRadius = canvasSize.width * 0.32f
+    val radius = baseRadius * pulse
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0f)),
+            center = center,
+            radius = radius,
+        ),
+        radius = radius,
+        center = center,
+    )
 }
 
 private fun parseForecastTime(datetime: String): OffsetDateTime? =
@@ -127,6 +240,7 @@ fun WeatherDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Box(modifier = Modifier.fillMaxWidth().height(320.dp).background(heroBrush))
+        WeatherParticles(condition = entity?.state.orEmpty(), modifier = Modifier.fillMaxWidth().height(320.dp))
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
