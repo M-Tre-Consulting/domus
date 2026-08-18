@@ -60,6 +60,9 @@ class HaRepository(
         restApi.callService(call)
     }
 
+    /** See [HaRestApi.getForecast]. */
+    suspend fun getForecast(entityId: String, type: String) = restApi.getForecast(entityId, type)
+
     fun startRealtimeUpdates(scope: CoroutineScope) {
         scope.launch {
             var isFirstConnect = true

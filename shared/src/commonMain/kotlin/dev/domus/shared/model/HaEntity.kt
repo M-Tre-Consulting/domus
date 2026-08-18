@@ -53,6 +53,18 @@ data class HaHistoryPoint(
     @SerialName("last_changed") val lastChanged: String,
 )
 
+/** A single entry from the `weather.get_forecasts` service response - one hour or one day,
+ *  depending on the `type` the caller asked for. */
+@Serializable
+data class HaForecastEntry(
+    val datetime: String,
+    val condition: String? = null,
+    val temperature: Double? = null,
+    val templow: Double? = null,
+    @SerialName("precipitation_probability") val precipitationProbability: Int? = null,
+    @SerialName("wind_speed") val windSpeed: Double? = null,
+)
+
 /** A request to invoke a Home Assistant service (e.g. `light.turn_on`). */
 data class HaServiceCall(
     val domain: String,

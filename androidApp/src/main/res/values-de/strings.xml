@@ -276,4 +276,8 @@
     <!-- Weather detail -->
     <string name="weather_wind">Wind</string>
     <string name="weather_pressure">Luftdruck</string>
+    <string name="weather_today">Heute</string>
+    <string name="weather_now">Jetzt</string>
+    <string name="weather_hourly_forecast">Stündliche Vorhersage</string>
+    <string name="weather_daily_forecast">Tägliche Vorhersage</string>
 </resources>

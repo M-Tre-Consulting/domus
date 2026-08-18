@@ -2,6 +2,7 @@ package dev.domus.shared.api
 
 import dev.domus.shared.auth.HaTokenProvider
 import dev.domus.shared.model.HaEntityState
+import dev.domus.shared.model.HaForecastEntry
 import dev.domus.shared.model.HaHistoryPoint
 import dev.domus.shared.model.HaServiceCall
 import io.ktor.client.HttpClient
@@ -21,6 +22,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.time.Duration.Companion.hours
 
 class HaApiException(message: String, val statusCode: Int? = null) : Exception(message)
@@ -83,6 +85,30 @@ class HaRestApi(
             val raw = response.body<JsonElement>()
             val innerList = (raw as? JsonArray)?.firstOrNull() as? JsonArray ?: return emptyList()
             json.decodeFromJsonElement<List<HaHistoryPoint>>(innerList)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    /** Calls `weather.get_forecasts` (the modern replacement for the old `forecast` state
+     *  attribute, removed in HA 2023.9) and returns the entries for [entityId]. [type] is
+     *  "hourly", "daily" or "twice_daily" - not every weather integration supports every
+     *  type, so an unsupported request just yields an empty list rather than throwing. */
+    suspend fun getForecast(entityId: String, type: String): List<HaForecastEntry> {
+        return try {
+            val response = client.post("$baseUrl/api/services/weather/get_forecasts") {
+                header("Authorization", "Bearer ${tokenProvider.accessToken()}")
+                parameter("return_response", "true")
+                contentType(ContentType.Application.Json)
+                setBody(JsonObject(mapOf("entity_id" to JsonPrimitive(entityId), "type" to JsonPrimitive(type))))
+            }
+            if (!response.status.isSuccess()) return emptyList()
+            val raw = response.body<JsonObject>()
+            val forecastArray = raw["service_response"]?.jsonObject
+                ?.get(entityId)?.jsonObject
+                ?.get("forecast") as? JsonArray
+                ?: return emptyList()
+            json.decodeFromJsonElement<List<HaForecastEntry>>(forecastArray)
         } catch (_: Exception) {
             emptyList()
         }
