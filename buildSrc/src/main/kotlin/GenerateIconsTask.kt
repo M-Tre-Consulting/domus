@@ -2,13 +2,19 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.RenderingHints
+import java.awt.geom.Ellipse2D
+import java.awt.geom.Path2D
+import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import javax.imageio.ImageIO
+import kotlin.math.cos
+import kotlin.math.sin
 
 abstract class GenerateIconsTask : DefaultTask() {
 
@@ -53,31 +59,77 @@ abstract class GenerateIconsTask : DefaultTask() {
         }
     }
 
+    // Mirrors the Android adaptive icon (ic_launcher_background/foreground.xml) and the desktop
+    // window icon (AppIcon.kt): a monogram of a house roofline, a lightning bolt (smart/power)
+    // and an open ring reading as a "D" (Domus), each in its own flat accent color, over a
+    // pastel color-blob backdrop. Coordinates are lifted straight from that 108x108 viewport.
     private fun drawIcon(g: java.awt.Graphics2D, size: Int) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        val s = size.toDouble()
+        val s = size.toFloat()
+        fun v(n: Float) = n / 108f * s
 
-        // Circular background
-        g.color = Color(0x1565C0)
-        g.fillOval(0, 0, size, size)
+        // Squircle clip, so the pastel blobs behind it don't spill into hard square corners.
+        val squircle = RoundRectangle2D.Float(0f, 0f, s, s, v(48f), v(48f))
+        val oldClip = g.clip
+        g.clip(squircle)
 
-        // House body
-        g.color = Color.WHITE
-        g.fillRect((s * 0.20).toInt(), (s * 0.46).toInt(), (s * 0.60).toInt(), (s * 0.36).toInt())
+        g.paint = Color(0xF4F6FC)
+        g.fill(squircle.bounds2D)
+        g.paint = withAlpha(Color(0xC3D7F8), 0.85f)
+        g.fill(circle(v(28f), v(26f), v(52f)))
+        g.paint = withAlpha(Color(0xCDEAD1), 0.80f)
+        g.fill(circle(v(88f), v(58f), v(48f)))
+        g.paint = withAlpha(Color(0xFCEAB6), 0.80f)
+        g.fill(circle(v(40f), v(92f), v(50f)))
+        g.clip = oldClip
 
-        // Roof triangle
-        val rx = intArrayOf((s * 0.50).toInt(), (s * 0.10).toInt(), (s * 0.90).toInt())
-        val ry = intArrayOf((s * 0.15).toInt(), (s * 0.48).toInt(), (s * 0.48).toInt())
-        g.fillPolygon(rx, ry, 3)
+        // Roofline: open stroke, left wall up to a peak, down to a right wall stub - a
+        // recognizable house outline (roof + two wall stubs), not just a checkmark.
+        val roofline = Path2D.Float()
+        roofline.moveTo(v(32f), v(63f))
+        roofline.lineTo(v(32f), v(46f))
+        roofline.lineTo(v(45f), v(33f))
+        roofline.lineTo(v(58f), v(46f))
+        roofline.lineTo(v(58f), v(59f))
+        g.paint = Color(0x4E7FE0)
+        g.stroke = BasicStroke(v(7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        g.draw(roofline)
 
-        // Door cutout in background color
-        g.color = Color(0x1565C0)
-        val dw = (s * 0.18).toInt()
-        val dh = (s * 0.24).toInt()
-        val dx = (s / 2 - dw / 2).toInt()
-        val dy = (s * 0.82 - dh).toInt()
-        g.fillRoundRect(dx, dy, dw, dh, (s * 0.08).toInt(), (s * 0.08).toInt())
+        // "D" ring: open circular arc (center 62,52 r 15), gap facing the house/bolt, same
+        // stroke weight as the roofline so the two read as a balanced pair. Approximated as a
+        // dense polyline so every platform renders the identical curve.
+        val ring = Path2D.Float()
+        val ringCx = v(62f); val ringCy = v(52f); val ringR = v(15f)
+        var first = true
+        var deg = 225.0
+        while (deg <= 495.0) {
+            val rad = Math.toRadians(deg)
+            val x = ringCx + ringR * cos(rad).toFloat()
+            val y = ringCy + ringR * sin(rad).toFloat()
+            if (first) { ring.moveTo(x, y); first = false } else ring.lineTo(x, y)
+            deg += 5.0
+        }
+        g.paint = Color(0x55A66B)
+        g.stroke = BasicStroke(v(7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        g.draw(ring)
+
+        // Bolt: solid fill, drawn last so it binds the composition together on top.
+        val bolt = Path2D.Float()
+        bolt.moveTo(v(43.83f), v(76.62f))
+        bolt.lineTo(v(47.99f), v(61.07f))
+        bolt.lineTo(v(39.11f), v(58.69f))
+        bolt.lineTo(v(60.17f), v(33.38f))
+        bolt.lineTo(v(56.01f), v(48.93f))
+        bolt.lineTo(v(64.89f), v(51.31f))
+        bolt.closePath()
+        g.paint = Color(0xFFC145)
+        g.fill(bolt)
     }
+
+    private fun circle(cx: Float, cy: Float, r: Float) = Ellipse2D.Float(cx - r, cy - r, r * 2, r * 2)
+
+    private fun withAlpha(c: Color, alpha: Float) =
+        Color(c.red, c.green, c.blue, (alpha * 255).toInt())
 
     private fun makeBitmap(size: Int): BufferedImage {
         val img = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)

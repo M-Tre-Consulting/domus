@@ -4,13 +4,22 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Same house mark as ic_launcher_foreground, minus the accent dot: themed icons (Android
-         13+) recolor a single flat alpha shape, so no secondary color here. -->
+    <!-- Same house/bolt/D monogram as ic_launcher_foreground, minus the color: themed icons
+         (Android 13+) recolor a single flat alpha shape, so everything is plain white here. -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,63 L32,46 L45,33 L58,46 L58,59" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M51.39,41.39 A15,15 0 1 1 51.39,62.61" />
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="
-            M50,26 L58,26 L80,46 L80,74 A6,6 0 0 1 74,80 L34,80 A6,6 0 0 1 28,74
-            L28,46 Z
-            M48,80 V66 A4,4 0 0 1 52,62 H56 A4,4 0 0 1 60,66 V80 Z" />
+        android:pathData="M43.83,76.62 L47.99,61.07 L39.11,58.69 L60.17,33.38 L56.01,48.93 L64.89,51.31 Z" />
 </vector>

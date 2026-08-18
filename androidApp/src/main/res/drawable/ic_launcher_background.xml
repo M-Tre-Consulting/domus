@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Diagonal brand-indigo gradient instead of a flat fill, for a bit of depth behind the
-     house mark (adaptive icon background layer). -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <gradient
-        android:type="linear"
-        android:angle="135"
-        android:startColor="#6B85FF"
-        android:endColor="#28359C" />
-</shape>
+<!-- Soft pastel color-field backdrop (adaptive icon background layer): three translucent
+     overlapping blobs - blue, mint, gold - echoing the flat accent colors used by the
+     house/bolt/D monogram in the foreground layer, Workspace-icon style. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F4F6FC"
+        android:pathData="M0,0 H108 V108 H0 Z" />
+    <path
+        android:fillColor="#C3D7F8"
+        android:fillAlpha="0.85"
+        android:pathData="M-24,26 A52,52 0 1 1 80,26 A52,52 0 1 1 -24,26 Z" />
+    <path
+        android:fillColor="#CDEAD1"
+        android:fillAlpha="0.80"
+        android:pathData="M40,58 A48,48 0 1 1 136,58 A48,48 0 1 1 40,58 Z" />
+    <path
+        android:fillColor="#FCEAB6"
+        android:fillAlpha="0.80"
+        android:pathData="M-10,92 A50,50 0 1 1 90,92 A50,50 0 1 1 -10,92 Z" />
+</vector>
