@@ -44,6 +44,7 @@ import dev.domus.android.data.FavoritesStore
 import dev.domus.android.data.HaSessionHolder
 import dev.domus.android.data.OnboardingStore
 import dev.domus.android.data.SettingsStore
+import dev.domus.android.ui.screens.AssistScreen
 import dev.domus.android.ui.screens.CameraDetailScreen
 import dev.domus.android.ui.screens.ClimateDetailScreen
 import dev.domus.android.ui.screens.ConnectScreen
@@ -117,6 +118,7 @@ object Routes {
     const val LOCK_DETAIL = "lock_detail"
     const val CAMERA_DETAIL = "camera_detail"
     const val WEATHER_DETAIL = "weather_detail"
+    const val ASSIST = "assist"
     const val ENTITY_DETAIL_ARG = "entityId"
     const val OAUTH_LOGIN = "oauth_login"
     const val OAUTH_LOGIN_ARG = "baseUrl"
@@ -323,6 +325,7 @@ private fun DomusNavHost() {
                         favoriteEntityIds = favoriteEntityIds,
                         onEditEntities = { navController.navigate(Routes.PICKER) },
                         onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                        onOpenAssist = { navController.navigate(Routes.ASSIST) },
                         onLogout = {
                             scope.launch { connectionStore.clear() }
                             HaConnectionService.stop(context.applicationContext)
@@ -448,6 +451,16 @@ private fun DomusNavHost() {
                 }
             } else {
                 WeatherDetailScreen(session = session, entityId = entityId, onBack = { navController.popBackStack() })
+            }
+        }
+        composable(Routes.ASSIST) {
+            val session = HaSessionHolder.session
+            if (session == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.CONNECT) { popUpTo(Routes.ASSIST) { inclusive = true } }
+                }
+            } else {
+                AssistScreen(session = session, onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.PICKER) {

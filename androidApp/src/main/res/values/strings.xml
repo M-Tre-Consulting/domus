@@ -280,4 +280,14 @@
     <string name="weather_now">Now</string>
     <string name="weather_hourly_forecast">Hourly forecast</string>
     <string name="weather_daily_forecast">Daily forecast</string>
+
+    <!-- Assist -->
+    <string name="assist_title">Assist</string>
+    <string name="assist_input_placeholder">Ask Home Assistant…</string>
+    <string name="assist_mic_content_description">Voice input</string>
+    <string name="assist_send_content_description">Send</string>
+    <string name="assist_welcome">Ask me to control your home, check a sensor, or run an automation.</string>
+    <string name="assist_error_generic">Sorry, I couldn\'t reach the conversation agent.</string>
+    <string name="assist_mic_unavailable">Voice input isn\'t available on this device.</string>
+    <string name="assist_open">Open Assist</string>
 </resources>

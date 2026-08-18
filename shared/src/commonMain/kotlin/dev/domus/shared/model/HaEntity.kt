@@ -65,6 +65,14 @@ data class HaForecastEntry(
     @SerialName("wind_speed") val windSpeed: Double? = null,
 )
 
+/** Result of a `conversation.process` call: the agent's spoken/text reply, plus the
+ *  conversation id to send back on the next turn so the agent keeps context. */
+data class HaConversationResponse(
+    val speech: String?,
+    val conversationId: String?,
+    val error: String? = null,
+)
+
 /** A request to invoke a Home Assistant service (e.g. `light.turn_on`). */
 data class HaServiceCall(
     val domain: String,

@@ -280,4 +280,14 @@
     <string name="weather_now">Ora</string>
     <string name="weather_hourly_forecast">Previsioni orarie</string>
     <string name="weather_daily_forecast">Previsioni giornaliere</string>
+
+    <!-- Assist -->
+    <string name="assist_title">Assist</string>
+    <string name="assist_input_placeholder">Chiedi a Home Assistant…</string>
+    <string name="assist_mic_content_description">Ingresso vocale</string>
+    <string name="assist_send_content_description">Invia</string>
+    <string name="assist_welcome">Chiedimi di controllare la tua casa, verificare un sensore o avviare un\'automazione.</string>
+    <string name="assist_error_generic">Impossibile contattare l\'agente di conversazione.</string>
+    <string name="assist_mic_unavailable">L\'ingresso vocale non è disponibile su questo dispositivo.</string>
+    <string name="assist_open">Apri Assist</string>
 </resources>

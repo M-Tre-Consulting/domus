@@ -63,6 +63,10 @@ class HaRepository(
     /** See [HaRestApi.getForecast]. */
     suspend fun getForecast(entityId: String, type: String) = restApi.getForecast(entityId, type)
 
+    /** See [HaRestApi.converse]. */
+    suspend fun converse(text: String, conversationId: String?, language: String?) =
+        restApi.converse(text, conversationId, language)
+
     fun startRealtimeUpdates(scope: CoroutineScope) {
         scope.launch {
             var isFirstConnect = true

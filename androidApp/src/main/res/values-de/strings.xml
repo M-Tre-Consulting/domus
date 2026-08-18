@@ -280,4 +280,14 @@
     <string name="weather_now">Jetzt</string>
     <string name="weather_hourly_forecast">Stündliche Vorhersage</string>
     <string name="weather_daily_forecast">Tägliche Vorhersage</string>
+
+    <!-- Assist -->
+    <string name="assist_title">Assist</string>
+    <string name="assist_input_placeholder">Frag Home Assistant…</string>
+    <string name="assist_mic_content_description">Spracheingabe</string>
+    <string name="assist_send_content_description">Senden</string>
+    <string name="assist_welcome">Frag mich, um dein Zuhause zu steuern, einen Sensor zu prüfen oder eine Automatisierung auszuführen.</string>
+    <string name="assist_error_generic">Der Conversation-Agent konnte nicht erreicht werden.</string>
+    <string name="assist_mic_unavailable">Spracheingabe ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="assist_open">Assist öffnen</string>
 </resources>

@@ -1,6 +1,7 @@
 package dev.domus.shared.api
 
 import dev.domus.shared.auth.HaTokenProvider
+import dev.domus.shared.model.HaConversationResponse
 import dev.domus.shared.model.HaEntityState
 import dev.domus.shared.model.HaForecastEntry
 import dev.domus.shared.model.HaHistoryPoint
@@ -21,6 +22,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Duration.Companion.hours
@@ -111,6 +113,44 @@ class HaRestApi(
             json.decodeFromJsonElement<List<HaForecastEntry>>(forecastArray)
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    /** Sends [text] to HA's conversation agent (Assist) via `conversation.process` and returns
+     *  its reply. Pass back the previous [conversationId] on follow-up turns so the agent keeps
+     *  context; omit it to start a fresh conversation. Never throws - network/parse failures
+     *  come back as a [HaConversationResponse] with a null [HaConversationResponse.speech] and
+     *  a populated [HaConversationResponse.error] so the chat UI can show a failure bubble. */
+    suspend fun converse(text: String, conversationId: String?, language: String?): HaConversationResponse {
+        return try {
+            val body = buildMap<String, JsonElement> {
+                put("text", JsonPrimitive(text))
+                conversationId?.let { put("conversation_id", JsonPrimitive(it)) }
+                language?.let { put("language", JsonPrimitive(it)) }
+            }
+            val response = client.post("$baseUrl/api/services/conversation/process") {
+                header("Authorization", "Bearer ${tokenProvider.accessToken()}")
+                parameter("return_response", "true")
+                contentType(ContentType.Application.Json)
+                setBody(JsonObject(body))
+            }
+            if (!response.status.isSuccess()) {
+                return HaConversationResponse(speech = null, conversationId = null, error = "HTTP ${response.status.value}")
+            }
+            val raw = response.body<JsonObject>()
+            val serviceResponse = raw["service_response"]?.jsonObject
+            val speech = serviceResponse
+                ?.get("response")?.jsonObject
+                ?.get("speech")?.jsonObject
+                ?.get("plain")?.jsonObject
+                ?.get("speech") as? JsonPrimitive
+            val newConversationId = serviceResponse?.get("conversation_id") as? JsonPrimitive
+            HaConversationResponse(
+                speech = speech?.contentOrNull,
+                conversationId = newConversationId?.contentOrNull,
+            )
+        } catch (e: Exception) {
+            HaConversationResponse(speech = null, conversationId = null, error = e.message)
         }
     }
 

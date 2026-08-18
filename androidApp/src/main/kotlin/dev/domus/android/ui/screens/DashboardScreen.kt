@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
@@ -67,6 +68,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -183,6 +185,7 @@ fun DashboardScreen(
     favoriteEntityIds: Set<String>,
     onEditEntities: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenAssist: () -> Unit,
     onLogout: () -> Unit,
     onOpenDetail: (entityId: String) -> Unit,
 ) {
@@ -352,6 +355,15 @@ fun DashboardScreen(
                 )
             }
         },
+        floatingActionButton = {
+            if (!isSearchActive) {
+                ExtendedFloatingActionButton(
+                    onClick = onOpenAssist,
+                    icon = { Icon(Icons.Filled.Mic, contentDescription = null) },
+                    text = { Text(stringResource(R.string.assist_title)) },
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -492,7 +504,7 @@ fun DashboardScreen(
  *  toolbar. Colors come from the current color scheme's containers, so it stays in harmony
  *  with dynamic/wallpaper-derived color instead of clashing with an arbitrary hardcoded hue. */
 @Composable
-private fun BrandBlobBackdrop(modifier: Modifier = Modifier) {
+internal fun BrandBlobBackdrop(modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primaryContainer
     val secondary = MaterialTheme.colorScheme.secondaryContainer
     val tertiary = MaterialTheme.colorScheme.tertiaryContainer
