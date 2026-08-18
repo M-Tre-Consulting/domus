@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,6 +58,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -259,10 +262,9 @@ fun WeatherDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
 
     val (skyTop, skyBottom) = skyGradientFor(entity?.state.orEmpty())
     val heroBrush = Brush.verticalGradient(listOf(skyTop, skyBottom))
+    val layoutDirection = LocalLayoutDirection.current
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Box(modifier = Modifier.fillMaxWidth().height(320.dp).background(heroBrush))
-        WeatherParticles(condition = entity?.state.orEmpty(), modifier = Modifier.fillMaxWidth().height(320.dp))
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -285,7 +287,10 @@ fun WeatherDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
             },
         ) { padding ->
             if (entity == null) {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.fillMaxSize().background(heroBrush).padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
                     CircularProgressIndicator(color = Color.White)
                 }
                 return@Scaffold
@@ -303,36 +308,51 @@ fun WeatherDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
             val todayLabel = stringResource(R.string.weather_today)
 
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = padding.calculateStartPadding(layoutDirection),
+                        end = padding.calculateEndPadding(layoutDirection),
+                        bottom = padding.calculateBottomPadding(),
+                    )
+                    .verticalScroll(rememberScrollState()),
             ) {
-                // --- Hero: floating condition icon, big current temp, today's hi/lo ---
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = DesignTokens.Spacing.lg.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    FloatingWeatherIcon(condition = entity.state)
-                    Spacer(Modifier.height(DesignTokens.Spacing.sm.dp))
-                    Text(
-                        text = entity.weatherTemperature?.let { "%.0f%s".format(it, unit) } ?: "—",
-                        style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                    )
-                    Text(
-                        text = weatherConditionLabel(entity.state),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                    daily.firstOrNull()?.let { today ->
-                        if (today.temperature != null && today.templow != null) {
-                            Text(
-                                text = "H:%.0f%s L:%.0f%s".format(today.temperature, unit, today.templow, unit),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.85f),
-                                modifier = Modifier.padding(top = DesignTokens.Spacing.xs.dp),
-                            )
+                // --- Hero: sky gradient sized to its own content (icon, temp, condition, hi/lo)
+                // instead of a fixed height, so it never clips the text below it; the app bar's
+                // own top inset is applied here (not on the outer Column) so the gradient still
+                // extends behind the transparent app bar. ---
+                Box(modifier = Modifier.fillMaxWidth().background(heroBrush)) {
+                    WeatherParticles(condition = entity.state, modifier = Modifier.matchParentSize())
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = padding.calculateTopPadding() + DesignTokens.Spacing.lg.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        FloatingWeatherIcon(condition = entity.state)
+                        Spacer(Modifier.height(DesignTokens.Spacing.sm.dp))
+                        Text(
+                            text = entity.weatherTemperature?.let { "%.0f%s".format(it, unit) } ?: "—",
+                            style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                        )
+                        Text(
+                            text = weatherConditionLabel(entity.state),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                        daily.firstOrNull()?.let { today ->
+                            if (today.temperature != null && today.templow != null) {
+                                Text(
+                                    text = "H:%.0f%s L:%.0f%s".format(today.temperature, unit, today.templow, unit),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.padding(top = DesignTokens.Spacing.xs.dp),
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(DesignTokens.Spacing.lg.dp))
                     }
-                    Spacer(Modifier.height(DesignTokens.Spacing.lg.dp))
                 }
 
                 // --- Below the fold: hourly strip, daily list, stats, attribution ---
