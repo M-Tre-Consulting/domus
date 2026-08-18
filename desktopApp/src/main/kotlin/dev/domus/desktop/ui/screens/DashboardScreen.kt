@@ -3,7 +3,13 @@ package dev.domus.desktop.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +18,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,6 +65,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -69,7 +77,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.domus.desktop.data.SettingsStore
@@ -98,6 +109,7 @@ import dev.domus.shared.model.percentage
 import dev.domus.shared.model.targetTemperature
 import dev.domus.shared.model.targetTempStep
 import dev.domus.shared.model.temperatureUnit
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -181,7 +193,10 @@ fun DashboardScreen(
             else groups.toSortedMap()
         }
 
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    BrandBlobBackdrop(modifier = Modifier.fillMaxWidth().height(260.dp))
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             if (isSearchActive) {
                 TopAppBar(
@@ -201,12 +216,21 @@ fun DashboardScreen(
                             Icon(Icons.Filled.Close, contentDescription = "Close search")
                         }
                     },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 )
             } else {
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Domus")
+                            Text(
+                                text = "Domus",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    brush = Brush.linearGradient(
+                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary),
+                                    ),
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            )
                             if (showDebugDiag) Text(registryDiag, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
@@ -221,6 +245,7 @@ fun DashboardScreen(
                         IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
                         IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Disconnect") }
                     },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 )
             }
         },
@@ -260,20 +285,22 @@ fun DashboardScreen(
                             item(key = "header_$label", span = { GridItemSpan(maxLineSpan) }) {
                                 DomainHeader(label)
                             }
-                            items(entitiesInGroup, key = { it.entityId }, span = { entity ->
+                            itemsIndexed(entitiesInGroup, key = { _, entity -> entity.entityId }, span = { _, entity ->
                                 if (entity.domain in TILE_DOMAINS) GridItemSpan(1) else GridItemSpan(maxLineSpan)
-                            }) { entity ->
-                                if (entity.domain in TILE_DOMAINS) {
-                                    EntityTile(entity = entity, onCallService = ::callService)
-                                } else {
-                                    EntityCard(
-                                        entity = entity,
-                                        onCallService = ::callService,
-                                        onOpenDetail = when (entity.domain) {
-                                            "climate", "water_heater", "light", "switch", "media_player", "lock" -> { { onOpenDetail(entity.entityId) } }
-                                            else -> null
-                                        },
-                                    )
+                            }) { index, entity ->
+                                StaggeredItem(index = index) {
+                                    if (entity.domain in TILE_DOMAINS) {
+                                        EntityTile(entity = entity, onCallService = ::callService)
+                                    } else {
+                                        EntityCard(
+                                            entity = entity,
+                                            onCallService = ::callService,
+                                            onOpenDetail = when (entity.domain) {
+                                                "climate", "water_heater", "light", "switch", "media_player", "lock" -> { { onOpenDetail(entity.entityId) } }
+                                                else -> null
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -281,6 +308,55 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+    } // Box
+}
+
+/** Soft translucent color blobs washed behind the top bar, echoing the app icon's pastel
+ *  backdrop so the dashboard's first moment feels like part of the same brand, not a plain
+ *  toolbar. Colors come from the current color scheme's containers, so it stays in harmony
+ *  with dynamic/seed color instead of clashing with an arbitrary hardcoded hue. */
+@Composable
+private fun BrandBlobBackdrop(modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primaryContainer
+    val secondary = MaterialTheme.colorScheme.secondaryContainer
+    val tertiary = MaterialTheme.colorScheme.tertiaryContainer
+    Canvas(modifier = modifier) {
+        fun blob(color: Color, cx: Float, cy: Float, r: Float) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(color.copy(alpha = 0.6f), color.copy(alpha = 0f)),
+                    center = Offset(cx, cy),
+                    radius = r,
+                ),
+                radius = r,
+                center = Offset(cx, cy),
+            )
+        }
+        // Radii are height-based (not width-based): the window is much wider than this strip
+        // is tall, so a width-scaled radius would blow the blobs up into a flat wash.
+        blob(primary, size.width * 0.08f, -size.height * 0.20f, size.height * 1.15f)
+        blob(tertiary, size.width * 0.92f, size.height * 0.15f, size.height * 1.05f)
+        blob(secondary, size.width * 0.45f, size.height * 1.05f, size.height * 1.1f)
+    }
+}
+
+/** Fades, scales and slides a grid item in shortly after it enters composition, staggered by
+ *  its position within the group. */
+@Composable
+private fun StaggeredItem(index: Int, content: @Composable () -> Unit) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(index.coerceIn(0, 12) * 35L)
+        visible = true
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(240)) +
+            scaleIn(initialScale = 0.92f, animationSpec = tween(240)) +
+            slideInVertically(initialOffsetY = { it / 8 }, animationSpec = tween(240)),
+    ) {
+        content()
     }
 }
 
