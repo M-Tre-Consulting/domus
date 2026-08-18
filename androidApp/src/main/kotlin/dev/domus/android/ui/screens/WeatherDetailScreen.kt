@@ -99,6 +99,28 @@ private fun skyGradientFor(condition: String): Pair<Color, Color> = when (condit
     else -> Color(0xFF4E86C6) to Color(0xFFB9D3E8)
 }
 
+/** HA condition strings are machine identifiers, not display text ("partlycloudy",
+ *  "clear-night") - map the known ones to proper labels instead of running them through the
+ *  generic underscore-splitting formatter used for entity states elsewhere. */
+private fun weatherConditionLabel(condition: String): String = when (condition.lowercase()) {
+    "clear-night" -> "Clear night"
+    "cloudy" -> "Cloudy"
+    "exceptional" -> "Exceptional"
+    "fog" -> "Fog"
+    "hail" -> "Hail"
+    "lightning" -> "Lightning"
+    "lightning-rainy" -> "Thunderstorms"
+    "partlycloudy" -> "Partly cloudy"
+    "pouring" -> "Pouring rain"
+    "rainy" -> "Rainy"
+    "snowy" -> "Snowy"
+    "snowy-rainy" -> "Snow and rain"
+    "sunny" -> "Sunny"
+    "windy" -> "Windy"
+    "windy-variant" -> "Windy"
+    else -> condition.toDisplayLabel()
+}
+
 private enum class ParticleKind { RAIN, SNOW, STARS, SUN, NONE }
 
 private fun particleKindFor(condition: String): ParticleKind = when (condition.lowercase()) {
@@ -296,7 +318,7 @@ fun WeatherDetailScreen(session: HaSession, entityId: String, onBack: () -> Unit
                         color = Color.White,
                     )
                     Text(
-                        text = entity.state.toDisplayLabel(),
+                        text = weatherConditionLabel(entity.state),
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White.copy(alpha = 0.9f),
                     )
