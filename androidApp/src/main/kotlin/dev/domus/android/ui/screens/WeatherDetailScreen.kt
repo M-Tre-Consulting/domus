@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.StrokeCap
@@ -408,10 +408,10 @@ private fun HourlyForecastRow(entries: List<HaForecastEntry>, unit: String) {
             Card(
                 shape = RoundedCornerShape(DesignTokens.Shape.cornerLarge.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                modifier = Modifier.width(64.dp),
+                modifier = Modifier.widthIn(min = 64.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = DesignTokens.Spacing.sm.dp),
+                    modifier = Modifier.padding(horizontal = DesignTokens.Spacing.xs.dp, vertical = DesignTokens.Spacing.sm.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
@@ -419,6 +419,7 @@ private fun HourlyForecastRow(entries: List<HaForecastEntry>, unit: String) {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
+                        softWrap = false,
                     )
                     Spacer(Modifier.height(DesignTokens.Spacing.xs.dp))
                     Icon(
@@ -431,6 +432,8 @@ private fun HourlyForecastRow(entries: List<HaForecastEntry>, unit: String) {
                     Text(
                         text = entry.temperature?.let { "%.0f%s".format(it, unit) } ?: "—",
                         style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 }
             }
@@ -455,7 +458,9 @@ private fun DailyForecastCard(entries: List<HaForecastEntry>, unit: String, toda
                     Text(
                         text = formatDayLabel(entry.datetime, todayLabel),
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.width(56.dp),
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.widthIn(min = 56.dp),
                     )
                     Icon(
                         imageVector = iconForWeatherCondition(entry.condition.orEmpty()),
@@ -470,7 +475,9 @@ private fun DailyForecastCard(entries: List<HaForecastEntry>, unit: String, toda
                             text = "%.0f%s".format(low, unit),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = DesignTokens.Spacing.md.dp).width(36.dp),
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(start = DesignTokens.Spacing.md.dp).widthIn(min = 36.dp),
                         )
                         DailyTempRangeBar(
                             low = low,
@@ -483,7 +490,9 @@ private fun DailyForecastCard(entries: List<HaForecastEntry>, unit: String, toda
                             text = "%.0f%s".format(high, unit),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(36.dp),
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.widthIn(min = 36.dp),
                             textAlign = TextAlign.End,
                         )
                     } else {
